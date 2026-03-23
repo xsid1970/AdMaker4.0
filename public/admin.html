@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>통영.거제교차로 기획광고 편집기 V1.5 - 관리자</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #6366f1;
+            --secondary-hover: #4f46e5;
+            --success: #10b981;
+            --success-hover: #059669;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --neutral: #64748b;
+            --neutral-hover: #475569;
+            --bg-dark: #1e1e2f;
+            --bg-sidebar: #2a2a3c;
+            --border: #3d3d52;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: var(--bg-dark);
+            color: #fff;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .app-header {
+            background: #161622;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 2px solid #ff69b4;
+            flex-shrink: 0;
+        }
+
+        .creator-info {
+            font-size: 26px;
+            color: #a29bfe;
+            font-weight: 500;
+        }
+
+        .main-title {
+            font-size: 24px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .version-badge {
+            background: #ff4757;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 900;
+        }
+
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .toggle-panel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ff69b4;
+            color: white;
+            border: none;
+            width: 24px;
+            height: 50px;
+            cursor: pointer;
+            z-index: 100;
+            font-weight: bold;
+            border-radius: 0 8px 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-panel-btn.left {
+            left: 240px;
+            transition: 0.3s;
+        }
+
+        .toggle-panel-btn.left.collapsed {
+            left: 0;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #2a2a3c;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #3d3d52;
+            transition: 0.3s;
+            flex-shrink: 0;
+        }
+
+        .sidebar.collapsed {
+            margin-left: -240px;
+        }
+
+        .sidebar-header {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background: #1a1a24;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .template-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tpl-item {
+            background: #35354b;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .tpl-item.active {
+            border-color: #ff69b4;
+            background: #4a3e5c;
+        }
+
+        .tpl-thumb {
+            width: 100%;
+            height: 100px;
+            background: #000;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            object-fit: contain;
+        }
+
+        .tpl-info {
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .badge.active {
+            background: #2ecc71;
+        }
+
+        .badge.draft {
+            background: var(--neutral);
+        }
+
+        /* 전문적인 버튼 시스템 */
+        .btn-full {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 8px;
+            color: white;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .btn-full:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .btn-full:active { transform: translateY(0); }
+
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .btn-secondary { background: var(--secondary); }
+        .btn-secondary:hover { background: var(--secondary-hover); }
+
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: var(--success-hover); }
+
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: var(--danger-hover); }
+
+        .btn-neutral { background: var(--neutral); }
+        .btn-neutral:hover { background: var(--neutral-hover); }
+
+        .btn-tool {
+            background: #35354b;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: #ddd;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        .btn-tool:hover { background: #4a4a6a; color: #fff; border-color: var(--secondary); }
+
+        .main-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1a1a24;
+            position: relative;
+            min-width: 0;
+        }
+
+        .top-toolbar {
+            height: 50px;
+            background: #2a2a3c;
+            border-bottom: 1px solid #3d3d52;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-tool {
+            background: #555;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn-tool:hover {
+            background: #777;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            transition: 0.2s;
+        }
+
+        .canvas-container {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px;
+            background-image: linear-gradient(#2a2a3c 1px, transparent 1px), linear-gradient(90deg, #2a2a3c 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: center top;
+        }
+
+        #canvasWrapper {
+            background: white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            position: relative;
+            transform-origin: top left;
+            margin: 0 auto;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .properties-panel {
+            width: 350px;
+            background: #2a2a3c;
+            border-left: 1px solid #3d3d52;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+            transition: 0.3s;
+        }
+
+        .properties-panel.preview-mode {
+            margin-right: -350px;
+        }
+
+        .panel-section {
+            padding: 15px;
+            border-bottom: 1px solid #3d3d52;
+        }
+
+        .panel-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #f1c40f;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #bdc3c7;
+            margin-bottom: 4px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            background: #1a1a24;
+            border: 1px solid #555;
+            color: white;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 10px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #2a2a3c;
+            border: 2px solid #ff69b4;
+            border-radius: 8px;
+            padding: 20px;
+            width: 380px;
+            color: white;
+        }
+
+        .tab-header {
+            display: flex;
+            gap: 5px;
+            margin-top: 15px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+
+        .tab-btn {
+            background: #1a1a24;
+            border: 1px solid #555;
+            color: #ccc;
+            padding: 6px 12px;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .tab-btn.active {
+            background: #ff69b4;
+            border-color: #ff69b4;
+            color: white;
+        }
+
+        .char-grid {
+            display: none;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .char-grid.active {
+            display: grid;
+        }
+
+        .char-grid button {
+            background: #1a1a24;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-size: 16px;
+            padding: 8px 0;
+            cursor: pointer;
+        }
+
+        .char-grid button:hover {
+            background: #ff69b4;
+        }
+
+        #magicBadge {
+            display: none;
+            background: #ff69b4;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        #catMover {
+            position: fixed;
+            bottom: 80px;
+            right: 80px;
+            z-index: 5000;
+            cursor: move;
+        }
+
+        .cat-container {
+            position: relative;
+            animation: floatBig 7s ease-in-out infinite;
+        }
+
+        .wandering-cat {
+            width: 150px;
+            height: 150px;
+            background: url('/uploads/cat_bg.jpg') center/cover;
+            border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            border: 4px solid rgba(255, 255, 255, 0.9);
+            animation: morph 10s ease-in-out infinite;
+            opacity: 0.95;
+            transition: transform 0.3s;
+        }
+
+        .wandering-cat:hover {
+            transform: scale(1.1);
+        }
+
+        .cat-speech-bubble {
+            position: absolute;
+            bottom: 150px;
+            right: 50px;
+            background: white;
+            border-radius: 20px;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 900;
+            color: #ff6b6b;
+            z-index: 100;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            white-space: nowrap;
+            pointer-events: none;
+            border: 3px solid #ff6b6b;
+        }
+
+        .cat-speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            right: 40px;
+            border-width: 12px 12px 0 0;
+            border-style: solid;
+            border-color: #ff6b6b transparent transparent transparent;
+        }
+
+        .cat-speech-bubble.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        @keyframes floatBig {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+            }
+
+            33% {
+                transform: translateY(-30px) translateX(-15px) rotate(8deg);
+            }
+
+            66% {
+                transform: translateY(-10px) translateX(15px) rotate(-5deg);
+            }
+
+            100% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+            }
+        }
+
+        @keyframes morph {
+            0% {
+                border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%;
+            }
+
+            50% {
+                border-radius: 54% 46% 38% 62% / 49% 54% 46% 51%;
+            }
+
+            100% {
+                border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%;
+            }
+        }
+      .canvas-wrapper {
+    flex: 1; padding: 20px;
+    display: flex; justify-content: center; align-items: center;
+    background: #ecf0f1; position: relative;
+    overflow: auto; /* v2.1: 스크롤바 추가 */
+  }
+</style>
+</head>
+
+<body>
+    <div class="app-header">
+        <div class="creator-info">만든이: 통영.거제교차로</div>
+        <div class="main-title"><img src="/uploads/logo.png" style="height:32px; object-fit:contain;"> 기획광고 편집기 <span
+                class="version-badge">V1.6 관리자</span></div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn-tool" style="background:#555;" onclick="saveDraftAndSwitch('/index.html')">👨‍💻 직원 화면</button>
+            <button class="btn-tool" style="background:#555;" onclick="openMemberInfo()">👤 내정보</button>
+            <button class="btn-tool" style="background:#4a69bd;" onclick="openMemberAdmin()">👥 회원관리</button>
+            <button class="btn-tool" style="background:#c0392b;" onclick="cleanupDB()">🧹 정리</button>
+            <button class="btn-tool" style="background:#34495e;"
+                onclick="localStorage.removeItem('v8_user_role');localStorage.removeItem('v8_user_id');location.href='/';">🚪
+                로그아웃</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="charModalOverlay">
+        <div class="modal-content">
+            <div style="display:flex;justify-content:space-between;"><strong style="color:#f1c40f;font-size:18px;">✨ 스티커
+                    & 특수문자</strong><button class="btn-tool" style="background:#e74c3c;"
+                    onclick="closeModal('charModalOverlay')">닫기</button></div>
+            <p style="font-size:12px;color:#ccc;">※ 더블클릭 시 커서 위치 삽입</p>
+            <div class="tab-header"><button class="tab-btn active" onclick="switchCharTab('stickers')">🚀
+                    스티커</button><button class="tab-btn" onclick="switchCharTab('symbols')">기호</button><button
+                    class="tab-btn" onclick="switchCharTab('units')">단위</button><button class="tab-btn"
+                    onclick="switchCharTab('brackets')">괄호</button></div>
+            <div class="char-grid active" id="tab_stickers" style="grid-template-columns:1fr 1fr;"><button
+                    onclick="addSticker('urgent')" style="background:#e74c3c;">🚨 급매 뱃지</button><button
+                    onclick="addSticker('recommend')" style="background:#f1c40f;color:#000;">⭐ 추천 뱃지</button><button
+                    onclick="addSticker('table_realestate')" style="background:#34495e;">📊 부동산 표</button><button
+                    onclick="addSticker('table_job')" style="background:#2c3e50;">📊 구인 표</button></div>
+            <div class="char-grid" id="tab_symbols"></div>
+            <div class="char-grid" id="tab_units"></div>
+            <div class="char-grid" id="tab_brackets"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="loadingModal"
+        style="display:none;z-index:9999;font-weight:bold;font-size:24px;color:#fff;">PDF 생성중...⏳</div>
+
+    <div class="modal-overlay" id="memberInfoModal">
+        <div class="modal-content" style="width:320px; border-left:5px solid #3498db;">
+            <h3 style="margin-top:0; color:#3498db;">👤 내 정보 수정</h3>
+            <div class="form-group" style="margin-bottom:10px;"><label>아이디</label><input type="text" id="myId" readonly style="background:#555;color:#ccc;"></div>
+            <div class="form-group" style="margin-bottom:10px;"><label>이름</label><input type="text" id="myName"></div>
+            <div class="form-group" style="margin-bottom:10px;"><label>연락처</label><input type="text" id="myContact"></div>
+            <div class="form-group" style="margin-bottom:10px;"><label>현재 비밀번호</label><input type="password" id="myOldPassword" placeholder="변경하려면 입력"></div>
+            <div class="form-group" style="margin-bottom:15px;"><label>새 비밀번호</label><input type="password" id="myPassword" placeholder="미입력시 유지"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-full" style="background:#3498db; margin:0;" onclick="saveMyInfo()">저장하기</button>
+                <button class="btn-full" style="background:#95a5a6; margin:0;" onclick="closeModal('memberInfoModal')">취소</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="memberAdminModal">
+        <div class="modal-content" style="width:600px; max-width:90vw; background:#2a2a3c;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <h3 style="margin:0; color:#f1c40f;">👥 회원 관리</h3>
+                <button class="btn-tool" onclick="closeModal('memberAdminModal')">닫기</button>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:15px; background:#1a1a24; padding:15px; border-radius:8px;">
+                <div style="flex:1;"><label style="font-size:12px;color:#bdc3c7;">아이디</label><input type="text" id="adminUserId" class="form-control" placeholder="신규 ID"></div>
+                <div style="flex:1;"><label style="font-size:12px;color:#bdc3c7;">비밀번호</label><input type="text" id="adminUserPw" class="form-control" placeholder="비번 (수정시)"></div>
+                <div style="flex:1;"><label style="font-size:12px;color:#bdc3c7;">권한</label>
+                    <select id="adminUserRole" class="form-control">
+                        <option value="employee">직원 (employee)</option>
+                        <option value="admin">관리자 (admin)</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <button class="btn-full" style="background:#2ecc71; margin:0; padding:8px 15px;" onclick="saveUser()">💾 저장/추가</button>
+                </div>
+            </div>
+            <div style="max-height:400px; overflow-y:auto; border:1px solid #555; background:#1e1e2f; border-radius:4px;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+                    <thead style="background:#3d3d52; position:sticky; top:0;">
+                        <tr>
+                            <th style="padding:10px; border-bottom:1px solid #555;">ID</th>
+                            <th style="padding:10px; border-bottom:1px solid #555;">이름</th>
+                            <th style="padding:10px; border-bottom:1px solid #555;">권한</th>
+                            <th style="padding:10px; border-bottom:1px solid #555;">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memberTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✂️ 이미지 크롭 모달 -->
+    <div class="modal-overlay" id="cropModal" style="display:none;">
+        <div class="modal-content" style="width:1000px; max-width:95vw; background:#1e1e2f; padding:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <h3 style="margin:0; color:#2ecc71;">✂️ 이미지 자유 크롭 (자르기)</h3>
+                <button class="btn-tool" onclick="closeModal('cropModal')">닫기</button>
+            </div>
+            <div style="display:flex; gap:20px;">
+                <div id="cropTargetWrapper" style="flex:1; background:#000; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center; min-height:500px; position:relative; border:2px solid #444;">
+                    <canvas id="cropCanvas" style="max-width:100%; max-height:70vh; cursor:crosshair;"></canvas>
+                </div>
+                <div style="width:240px; background:#2a2a3c; padding:20px; border-radius:8px; display:flex; flex-direction:column; gap:12px;">
+                    <div style="font-size:13px; color:#bdc3c7; margin-bottom:5px;">📍 크롭 영역 설정 (px)</div>
+                    <div class="grid-2">
+                        <div class="form-group"><label>시작 X</label><input type="number" id="cropX" class="form-control" oninput="drawCropPreview()"></div>
+                        <div class="form-group"><label>시작 Y</label><input type="number" id="cropY" class="form-control" oninput="drawCropPreview()"></div>
+                        <div class="form-group"><label>너비 W</label><input type="number" id="cropW" class="form-control" oninput="drawCropPreview()"></div>
+                        <div class="form-group"><label>높이 H</label><input type="number" id="cropH" class="form-control" oninput="drawCropPreview()"></div>
+                    </div>
+                    <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
+                    <p style="font-size:12px; color:#95a5a6; line-height:1.5;">※ 마우스로 화면을 드래그하여 영역을 지정하거나 수치를 직접 입력하세요.</p>
+                    <button class="btn-full" style="background:#2ecc71; margin:0; padding:12px;" onclick="applyCrop()">✂️ 크롭 적용하기</button>
+                    <button class="btn-full" style="background:#2ecc71; margin:0; padding:12px;" onclick="applyCrop()">✂️ 크롭 적용하기</button>
+                    <button class="btn-full" style="background:#f39c12; margin:0; padding:8px;" onclick="resetCropSelection()">🔄 선택 초기화</button>
+                    <button class="btn-full" style="background:#555; margin:0; padding:8px;" onclick="closeModal('cropModal')">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="magicSetupModal">
+        <div class="modal-content">
+            <h3 style="color:#f1c40f;margin-top:0;">✨ 매직 생성</h3>
+            <div class="grid-2">
+                <div class="form-group"><label>가로(px)</label><input type="number" id="magicW" class="form-control"
+                        value="720"></div>
+                <div class="form-group"><label>세로(px)</label><input type="number" id="magicH" class="form-control"
+                        value="420"></div>
+            </div><input type="file" id="magicRefInput" accept="image/*" class="form-control"
+                style="margin-bottom:10px;">
+            <div class="grid-2"><button class="btn-full" style="background:#e74c3c;margin:0;"
+                    onclick="closeModal('magicSetupModal')">취소</button><button class="btn-full"
+                    style="background:#3498db;margin:0;" onclick="startMagicMode()">시작!</button></div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="magicTypeModal">
+        <div class="modal-content" style="width:320px;text-align:center;">
+            <h3 style="color:#f1c40f;">영역 지정</h3><button class="btn-full" style="background:#3498db;"
+                onclick="confirmMagicElement('text')">🔤 텍스트 (박스 채우기)</button><button class="btn-full"
+                style="background:#8e44ad;" onclick="confirmMagicElement('phone')">☎️ 연락처 스캔</button><button
+                class="btn-full" style="background:#2ecc71;" onclick="confirmMagicElement('shape')">🟩 배경 컬러
+                추출</button><button class="btn-full" style="background:#95a5a6;margin-top:10px;"
+                onclick="closeModal('magicTypeModal')">취소</button>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="blankSetupModal">
+        <div class="modal-content" style="width:320px;">
+            <h3 style="color:#3498db;margin-top:0;">📄 빈 화면 생성</h3>
+            <p style="font-size:12px;color:#ccc;margin-bottom:15px;">배경 이미지 없이 수치 기반의 순백색(#ffffff) 화면을 생성합니다.</p>
+            <div class="grid-2">
+                <div class="form-group"><label>가로 해상도(px)</label><input type="number" id="blankW" class="form-control" value="720"></div>
+                <div class="form-group"><label>세로 해상도(px)</label><input type="number" id="blankH" class="form-control" value="420"></div>
+            </div>
+            <div class="grid-2" style="margin-top:10px;">
+                <button class="btn-full" style="background:#e74c3c;margin:0;" onclick="closeModal('blankSetupModal')">취소</button>
+                <button class="btn-full" style="background:#3498db;margin:0;" onclick="createBlankCanvas()">생성!</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="workspace">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div style="display:flex;gap:5px;margin-bottom:5px;">
+                    <button class="btn-full btn-success" style="padding:6px;font-size:12px;" onclick="exportTemplates()">💾 백업</button>
+                    <input type="file" id="importInput" style="display:none" accept=".json" onchange="importTemplates(event)">
+                    <button class="btn-full btn-primary" style="padding:6px;font-size:12px;" onclick="document.getElementById('importInput').click()">📂 복원</button>
+                </div>
+                <input type="text" id="tplSearch" class="search-box" style="margin-top:5px;" placeholder="🔍 템플릿 검색..."
+                    oninput="filterTemplates()">
+            </div>
+            <div class="template-list" id="templateList"></div>
+        </div>
+        <button class="toggle-panel-btn left" id="btnToggleLeft" onclick="toggleSidebar()">◀</button>
+
+        <div class="main-editor">
+            <div class="top-toolbar">
+                <div class="zoom-controls">
+                    <div id="magicBadge">✨ 매직 모드</div>
+                    <button class="btn-tool" onclick="togglePreviewMode()"
+                        id="btnPreviewMode" style="background:var(--secondary);color:white;">👁️ 미리보기</button>
+                    <button class="btn-tool" onclick="autoFitCanvas()">🖥 맞춤</button>
+                    <span>🔍</span><button class="btn-tool" onclick="zoomStep(-0.1)">➖</button><input type="range"
+                        id="zoomSlider" min="0.2" max="3" step="0.1" value="1" oninput="updateZoom()"
+                        style="width:70px;"><button class="btn-tool" onclick="zoomStep(0.1)">➕</button><span
+                        id="zoomValue" style="width:40px;font-size:12px;">100%</span>
+                    <button class="btn-tool" style="margin-left:10px;" onclick="undo()">↩️ 취소</button><button
+                        class="btn-tool" onclick="redo()">↪️ 복구</button>
+                </div>
+                <div class="action-btns" id="normalActionBtns">
+                    <button class="btn-action btn-neutral" onclick="duplicateTemplate()">👯 복제</button>
+                    <button class="btn-action btn-danger" style="display:none;" id="btnDeleteTpl"
+                        onclick="deleteTemplate()">🗑 삭제</button>
+                    <button class="btn-action btn-neutral" onclick="saveTemplate(0)">💾 임시저장</button>
+                    <button class="btn-action btn-success" style="display:none;" id="btnCancelDeploy"
+                        onclick="saveTemplate(0)">⛔ 배포취소</button>
+                    <button class="btn-action btn-primary" onclick="saveTemplate(1)">🚀 배포하기</button>
+                    <button class="btn-action btn-success" onclick="downloadFile('jpg')">📱 이미지</button>
+                    <button class="btn-action btn-success" onclick="downloadFile('pdf')">📄 PDF</button>
+                </div>
+                <div class="action-btns" id="magicActionBtns" style="display:none;"><button class="btn-action btn-danger"
+                        onclick="stopMagicMode()">✨ 종료</button></div>
+            </div>
+            <div class="canvas-container" id="canvasContainer">
+                <div id="canvasWrapper"><canvas id="canvas" width="720" height="420"></canvas></div>
+            </div>
+        </div>
+
+        <div class="properties-panel" id="rightPanel">
+            <div class="panel-section">
+                <h3>📝 템플릿 설정</h3>
+                <div class="form-group"><label>이름</label><input type="text" id="tplTitle" class="form-control"
+                        oninput="markUnsaved()"></div>
+                <div class="grid-2" style="margin-bottom:12px;">
+                    <div class="form-group" style="margin:0;"><label>가로(px)</label><input type="number" id="canvasW" class="form-control"
+                            value="720" onchange="resizeCanvasManual()"></div>
+                    <div class="form-group" style="margin:0;"><label>세로(px)</label><input type="number" id="canvasH" class="form-control"
+                            value="420" onchange="resizeCanvasManual()"></div>
+                </div>
+                <!-- 하단으로 통합된 버튼 레이아웃 -->
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <button class="btn-full btn-neutral" style="margin:0;font-size:14px;padding:8px;"
+                        onclick="openModal('blankSetupModal')">📄 백지 상태로 새로 만들기</button>
+                    <input type="file" id="bgInput" style="display:none" accept="image/*" onchange="uploadImage(event, 'bg')">
+                    <button class="btn-full btn-secondary" style="margin:0;font-size:14px;padding:8px;"
+                        onclick="document.getElementById('bgInput').click()">🖼 현재 화면 배경 변경</button>
+                    <button class="btn-full btn-neutral" style="margin:0;font-size:14px;padding:8px;"
+                        onclick="openCropModal('bg')">✂️ 현재 배경 이미지 자르기</button>
+                    <button class="btn-full btn-neutral" style="margin:0;font-size:14px;padding:8px;"
+                        onclick="openCropModal('canvas')">✂️ 작업 영역 전체 크롭 (Canvas)</button>
+                    <button class="btn-full btn-primary" style="margin:0;font-size:14px;padding:8px;"
+                        onclick="openModal('magicSetupModal')">✨ 배너 자동생성 매직 모드</button>
+                </div>
+            </div>
+            <div class="panel-section">
+                <h3>➕ 요소 추가</h3>
+                <div class="grid-3" style="gap:5px;">
+                    <button class="btn-full btn-secondary" style="margin:0;" onclick="addElement('text')">🔤 텍스트</button>
+                    <select id="shapeTypeSel" class="form-control" style="height:36px;padding:4px;"
+                        onchange="if(this.value){addElement('shape',this.value);this.value='';}">
+                        <option value="">🟩 도형</option>
+                        <option value="rect">사각</option>
+                        <option value="round">둥근사각</option>
+                        <option value="circle">원형</option>
+                        <option value="triangle">삼각</option>
+                        <option value="line">직선</option>
+                    </select>
+                    <button class="btn-full btn-secondary" style="margin:0;"
+                        onclick="openModal('charModalOverlay')">⭐ 스티커</button>
+                </div>
+                <div class="grid-2" style="gap:5px;margin-top:5px;">
+                    <div><input type="file" id="customImgInput" style="display:none" accept="image/*"
+                            onchange="uploadImage(event, 'image')"><button class="btn-full btn-secondary"
+                            style="margin:0;"
+                            onclick="document.getElementById('customImgInput').click()">🖼 사진</button></div>
+                    <button class="btn-full btn-secondary" style="margin:0;" onclick="addQRCode()">📱 QR코드</button>
+                </div>
+            </div>
+            <div class="panel-section" style="flex:1;">
+                <h3>🎯 요소 속성 <span id="lockStatus" style="font-size:12px;color:#e74c3c;"></span></h3>
+                <div id="noSelectionMsg" style="font-size:12px;color:#777;text-align:center;">캔버스를 클릭하세요.</div>
+                <div id="elementControls" style="display:none;background:#35354b;padding:15px;border-radius:6px;">
+                             앞으로</button><button class="btn-tool" onclick="changeLayer(-1)">▼ 뒤로</button><button
+                            class="btn-tool" style="background:#8e44ad;" id="btnLock" onclick="toggleLock()">🔒
+                            잠금</button><button class="btn-tool" style="background:#27ae60;display:none;" id="btnCropElem" onclick="openCropModal('element')">✂️ 자르기</button></div>
+                    <div class="form-group" id="ctrlPlaceholderGroup"><label>안내 가이드</label><input type="text"
+                            id="ctrlPlaceholder" class="form-control" oninput="updateElem()"></div>
+                    <div class="form-group" id="ctrlTextGroup"><label style="display:flex; justify-content:space-between; align-items:center;"><span style="display:flex; gap:8px; align-items:center;">내용 <label style="font-size:11px; color:#f1c40f; cursor:pointer; display:flex; align-items:center; margin:0;"><input type="checkbox" id="ctrlAutoScale" onchange="updateElem()" style="margin:0 4px 0 0;">자동 맞춤</label></span><select id="ctrlAlign" class="form-control"
+                                style="width:80px;padding:2px;height:24px;" onchange="updateElem()">
+                                <option value="left">좌측</option>
+                                <option value="center">중앙</option>
+                                <option value="right">우측</option>
+                            </select></label><textarea id="ctrlText" class="form-control" rows="2" style="margin-top:4px;"
+                            oninput="updateElem()"></textarea></div>
+                    <div class="grid-2">
+                        <div class="form-group"><label>색상</label><input type="color" id="ctrlColor" class="form-control"
+                                style="padding:0;height:34px;" oninput="updateElem()"></div>
+                        <div class="form-group"><label>투명도</label><input type="range" min="0.1" max="1" step="0.1"
+                                id="ctrlOpacity" style="width:100%;margin-top:8px;" oninput="updateElem()"></div>
+                        <div class="form-group" id="ctrlSizeGroup"><label>크기</label><input type="number" id="ctrlSize"
+                                class="form-control" oninput="updateElem()"></div>
+                        <div class="form-group" id="ctrlLetterSpaceGroup"><label>자간</label><input type="number"
+                                id="ctrlLetterSpace" class="form-control" oninput="updateElem()"></div>
+                        <div class="form-group" id="ctrlScaleXGroup"><label>가로스케일(%)</label><input type="number"
+                                id="ctrlScaleX" class="form-control" oninput="updateElem()"></div>
+                        <div class="form-group" id="ctrlScaleYGroup"><label>세로스케일(%)</label><input type="number"
+                                id="ctrlScaleY" class="form-control" oninput="updateElem()"></div>
+                        <div class="form-group" id="ctrlLineHeightGroup"><label>행간(%)</label><input type="number"
+                                id="ctrlLineHeight" class="form-control" oninput="updateElem()"></div>
+                        <div class="form-group" id="ctrlWeightGroup"><label>굵기</label>
+                            <div style="display:flex;gap:2px;"><select id="ctrlWeightSel" class="form-control"
+                                    style="width:50px;padding:2px;" onchange="syncWeight('sel')">
+                                    <option value="300">얇</option>
+                                    <option value="500">보</option>
+                                    <option value="700">굵</option>
+                                    <option value="900">최</option>
+                                </select><input type="number" id="ctrlWeightNum" class="form-control" step="10"
+                                    min="100" max="900" style="padding:2px;" oninput="syncWeight('num')"></div>
+                        </div>
+                        <div class="form-group" id="ctrlStrokeGroup"><label>테두리(외곽선)</label>
+                            <div style="display:flex;gap:2px;"><input type="number" id="ctrlStrokeW"
+                                    class="form-control" min="0" step="1" oninput="updateElem()"><input type="color"
+                                    id="ctrlStrokeC" class="form-control" style="padding:0;height:34px;"
+                                    oninput="updateElem()"></div>
+                        </div>
+                        <div class="form-group" id="ctrlShadowGroup"><label style="margin-top:8px;"><input
+                                    type="checkbox" id="ctrlShadow" onchange="updateElem()"> 그림자</label></div>
+
+                        <div class="form-group" id="ctrlBorderRadiusGroup" style="display:none;">
+                            <label>둥글기값</label><input type="number" id="ctrlBorderRadius" class="form-control"
+                                oninput="updateElem()"></div>
+                        <div class="form-group" id="ctrlWidthGroup"><label>가로</label><input type="number" id="ctrlWidth"
+                                class="form-control" oninput="updateElem()"></div>
+                        <div class="form-group" id="ctrlHeightGroup"><label>세로</label><input type="number"
+                                id="ctrlHeight" class="form-control" oninput="updateElem()"></div>
+                        <div class="form-group" id="ctrlFilterGroup" style="grid-column:1/-1;display:none;"><label>사진
+                                보정</label>
+                            <div style="display:flex;gap:5px;">☀️<input type="range" id="ctrlBrightness" min="50"
+                                    max="150" value="100" style="width:100%;" oninput="updateElem()">🌗<input
+                                    type="range" id="ctrlContrast" min="50" max="150" value="100" style="width:100%;"
+                                    oninput="updateElem()"></div>
+                        </div>
+                        <div class="form-group" id="cropBtnGroup" style="grid-column:1/-1; display:none;">
+                            <button class="btn-full" style="background:#27ae60; margin:0;" onclick="openCropModal('element')">✂️ 이미지 자르기 (Crop)</button>
+                        </div>
+                        <div class="form-group" id="ctrlRatioLockGroup" style="grid-column:1/-1;display:none;">
+                            <label><input type="checkbox" id="ctrlRatioLock" onchange="updateElem()"> 🔗 비율 고정</label>
+                        </div>
+                        <div class="form-group" id="ctrlFrameGroup" style="grid-column:1/-1;"><label>프레임</label><select
+                                id="ctrlFrame" class="form-control" onchange="updateElem()">
+                                <option value="none">원본</option>
+                                <option value="circle">원형</option>
+                                <option value="rounded">둥근사각</option>
+                                <option value="polygon">육각</option>
+                                <option value="star">별모양</option>
+                            </select></div>
+                    </div>
+                    <button class="btn-full btn-danger"
+                        style="width:100%;border-radius:4px;cursor:pointer;margin-top:10px;font-weight:bold;"
+                        onclick="removeElem()">🗑 요소 삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        if (localStorage.getItem('v8_user_role') !== 'admin') {
+            alert('⛔ 관리자 권한이 없습니다. 로그인 화면으로 이동합니다.');
+            window.location.href = '/';
+        }
+
+        // 난수 ID 생성기 (절대 중복 안됨)
+        function genId(p) { return p + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000); }
+        // 🚀 강철 파서
+        function safeParse(d) { if (!d) return []; if (Array.isArray(d)) return d; if (typeof d === 'string') { try { let p = JSON.parse(d); if (typeof p === 'string') p = JSON.parse(p); return Array.isArray(p) ? p : []; } catch (e) { return []; } } return []; }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        const charsData = { symbols: ['▶', '▷', '※', '★', '☆', '■', '□', '●', '○', '◆', '◇', '☎', '☏', '✔', '✅', '☞', '☜', '♥', '♡', '♣', '♠', '❌', '⭕', '❗', '❓', '💡', '🔥', '✨', '🎉', '🎁', '👍', '👎', '👏', '👐', '🙌', '🎯', '📌', '📍', '📢', '🔔', '🎵'], units: ['㎡', '㎥', '℃', '℉', '％', '‰', '㎜', '㎝', '㎞', '㎖', 'ℓ', '㎈', '㎉', '㎍', '㎎', '㎏', '㎐', '㎒', '㎓', '━', '┃', '┏', '┓', '┛', '┗', '┣', '┳', '┫', '┻', '╋', '╂', '₩', '＄', '€', '£', '¥'], brackets: ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', 'ⓐ', 'ⓑ', 'ⓒ', 'ⓓ', 'ⓔ', 'ⓕ', 'ⓖ', 'ⓗ', 'ⓘ', 'ⓙ', '㉠', '㉡', '㉢', '㉣', '㉤', '㉥', '㉦', '㉧', '㉨', '㉩', '【', '】', '〖', '〗', '『', '』', '《', '》', '〔', '〕', '㈜', '㈔', '㈇', '㈎', '㈏', '㈐', '㈑', '㈒'] };
+        function renderChars() { Object.keys(charsData).forEach(k => { const c = document.getElementById('tab_' + k); charsData[k].forEach(ch => { const b = document.createElement('button'); b.innerText = ch; b.ondblclick = () => insertChar(ch); c.appendChild(b); }); }); }
+        function switchCharTab(id) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.char-grid').forEach(g => g.classList.remove('active')); event.target.classList.add('active'); document.getElementById('tab_' + id).classList.add('active'); }
+        function insertChar(c) { const t = document.getElementById('ctrlText'); if (selectedElement && selectedElement.type === 'text' && document.activeElement === t) { const s = t.selectionStart, e = t.selectionEnd, v = t.value; t.value = v.substring(0, s) + c + v.substring(e); t.selectionStart = t.selectionEnd = s + c.length; t.dispatchEvent(new Event('input')); } else if (selectedElement && selectedElement.type === 'text') { t.value += c; t.dispatchEvent(new Event('input')); } else { addElement('text', c); } closeModal('charModalOverlay'); }
+        renderChars();
+
+        function addSticker(t) { closeModal('charModalOverlay'); const g = genId('g'); if (t === 'urgent') { elements.push({ id: genId('e'), groupId: g, type: 'shape', shapeType: 'circle', x: canvas.width / 2, y: canvas.height / 2, w: 70, h: 70, color: '#e74c3c', opacity: 1, ratioLock: true }); elements.push({ id: genId('e'), groupId: g, type: 'text', placeholder: '급매', text: '급매', x: canvas.width / 2, y: canvas.height / 2, size: 22, weight: 900, color: '#fff', opacity: 1, align: 'center', scaleX: 1, scaleY: 1 }); } else if (t === 'recommend') { elements.push({ id: genId('e'), groupId: g, type: 'shape', shapeType: 'star', x: canvas.width / 2, y: canvas.height / 2, w: 90, h: 90, color: '#f1c40f', opacity: 1, ratioLock: true }); elements.push({ id: genId('e'), groupId: g, type: 'text', placeholder: '강추', text: '강력\n추천', x: canvas.width / 2, y: canvas.height / 2, size: 18, weight: 900, color: '#000', opacity: 1, align: 'center', scaleX: 1, scaleY: 1, lineHeight: 110 }); } else if (t.includes('table')) { const r = t === 'table_realestate'; elements.push({ id: genId('e'), groupId: g, type: 'shape', shapeType: 'rect', x: canvas.width / 2, y: canvas.height / 2, w: 300, h: 60, color: '#f8f9fa', strokeW: 2, strokeC: '#bdc3c7', opacity: 1 }); elements.push({ id: genId('e'), groupId: g, type: 'text', placeholder: '표', text: r ? '면적: 84㎡ | 층수: 5층\n방/욕실: 3/2 | 입주: 즉시' : '모집: 홀서빙 | 시급: 12,000원\n시간: 10시~22시 | 휴무: 협의', x: canvas.width / 2, y: canvas.height / 2, size: 16, weight: 700, color: '#2c3e50', opacity: 1, align: 'center', scaleX: 1, scaleY: 1, lineHeight: 150 }); } saveHistory(); drawCanvas(); }
+
+        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d'), FONT = '"Noto Sans KR",sans-serif';
+        let allTemplates = [], currentTemplateId = null, bgImageUrl = '', bgImageObj = new Image(), elements = [], selectedElement = null, currentZoom = 1, clipboardElement = null, actionState = 'none', dragOffsetX = 0, dragOffsetY = 0, origX, origY, origW, origH, origSize, HANDLE_SIZE = 8, historyStack = [], historyIndex = -1, snapGuideX = null, snapGuideY = null, isMagicMode = false, refImageObj = null, magicRect = { startX: 0, startY: 0, endX: 0, endY: 0, drawing: false }, hasUnsavedChanges = false, isUpdatingPanel = false, isPreviewMode = false, autoSaveTimer = null;
+
+        window.onbeforeunload = e => { if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; } };
+        function markUnsaved() { hasUnsavedChanges = true; triggerGlobalDraft(); }
+        function markSaved() { hasUnsavedChanges = false; }
+
+        // 🚀 v2.1: 전역 드래프트 저장 (화면 전환용)
+        function triggerGlobalDraft() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                const draft = {
+                    elements: elements.map(e => ({ ...e, imgObj: undefined })),
+                    canvasSize: { w: canvas.width, h: canvas.height },
+                    customer: {
+                        company: document.getElementById('info_company').value,
+                        name: document.getElementById('info_name').value,
+                        contact: document.getElementById('info_contact').value,
+                        note: document.getElementById('info_note').value
+                    },
+                    bgUrl: bgImageObj.src
+                };
+                localStorage.setItem('admaker_global_draft', JSON.stringify(draft));
+            }, 1000);
+        }
+
+        function saveDraftAndSwitch(url) {
+            const draft = {
+                elements: elements.map(e => ({ ...e, imgObj: undefined })),
+                canvasSize: { w: canvas.width, h: canvas.height },
+                customer: {
+                    company: document.getElementById('info_company').value,
+                    name: document.getElementById('info_name').value,
+                    contact: document.getElementById('info_contact').value,
+                    note: document.getElementById('info_note').value
+                },
+                bgUrl: bgImageObj.src
+            };
+            localStorage.setItem('admaker_global_draft', JSON.stringify(draft));
+            location.href = url;
+        }
+
+        function loadGlobalDraft() {
+            const raw = localStorage.getItem('admaker_global_draft');
+            if (!raw) return;
+            try {
+                const d = JSON.parse(raw);
+                canvas.width = d.canvasSize.w || canvas.width;
+                canvas.height = d.canvasSize.h || canvas.height;
+                document.getElementById('info_company').value = d.customer.company || '';
+                document.getElementById('info_name').value = d.customer.name || '';
+                document.getElementById('info_contact').value = d.customer.contact || '';
+                document.getElementById('info_note').value = d.customer.note || '';
+
+                elements = d.elements.map(e => {
+                    if (e.type === 'image' && e.url) {
+                        e.imgObj = new Image(); e.imgObj.crossOrigin = "Anonymous";
+                        e.imgObj.onload = drawCanvas; e.imgObj.src = e.url;
+                    }
+                    return e;
+                });
+                if (d.bgUrl && d.bgUrl.startsWith('data:')) {
+                    bgImageObj.src = d.bgUrl;
+                    bgImageObj.onload = () => { drawCanvas(); autoFitCanvas(); };
+                } else {
+                    drawCanvas(); autoFitCanvas();
+                }
+            } catch (e) { console.error("Load draft failed", e); }
+        }
+        // 페이지 로드 시 드래프트 체크
+        window.addEventListener('load', () => { setTimeout(loadGlobalDraft, 100); });
+
+        let sidebarOpen = true;
+        function toggleSidebar() { sidebarOpen = !sidebarOpen; document.getElementById('sidebar').classList.toggle('collapsed'); const btn = document.getElementById('btnToggleLeft'); btn.classList.toggle('collapsed'); btn.innerText = sidebarOpen ? '◀' : '▶'; setTimeout(autoFitCanvas, 300); }
+        function togglePreviewMode() { isPreviewMode = !isPreviewMode; const rp = document.getElementById('rightPanel'), btn = document.getElementById('btnPreviewMode'); if (isPreviewMode) { rp.classList.add('preview-mode'); btn.style.background = '#2ecc71'; btn.innerText = '👁️ 복귀'; selectedElement = null; } else { rp.classList.remove('preview-mode'); btn.style.background = '#8e44ad'; btn.innerText = '👁️ 미리보기'; } drawCanvas(); setTimeout(autoFitCanvas, 300); }
+
+        function updateZoom() { currentZoom = document.getElementById('zoomSlider').value; document.getElementById('zoomValue').innerText = Math.round(currentZoom * 100) + '%'; document.getElementById('canvasWrapper').style.transform = `scale(${currentZoom})`; }
+        function zoomStep(v) { document.getElementById('zoomSlider').value = parseFloat(document.getElementById('zoomSlider').value) + v; updateZoom(); }
+        function autoFitCanvas() { const c = document.getElementById('canvasContainer'), wr = (c.clientWidth - 40) / canvas.width, hr = (c.clientHeight - 40) / canvas.height; let z = Math.min(wr, hr); if (z > 3) z = 3; if (z < 0.2) z = 0.2; document.getElementById('zoomSlider').value = z.toFixed(1); updateZoom(); }
+        function resizeCanvasManual() { canvas.width = document.getElementById('canvasW').value || 720; canvas.height = document.getElementById('canvasH').value || 420; markUnsaved(); drawCanvas(); setTimeout(autoFitCanvas, 100); }
+
+        function saveHistory() { const s = JSON.stringify(elements); if (historyIndex < historyStack.length - 1) historyStack = historyStack.slice(0, historyIndex + 1); if (historyStack[historyIndex] !== s) { historyStack.push(s); historyIndex++; markUnsaved(); } }
+        function undo() { if (historyIndex > 0) { historyIndex--; elements = safeParse(JSON.parse(historyStack[historyIndex])); elements.forEach(e => { if (e.type === 'image' && e.url) { e.imgObj = new Image(); e.imgObj.crossOrigin = "Anonymous"; e.imgObj.onload = drawCanvas; e.imgObj.src = e.url; } }); selectedElement = null; drawCanvas(); updateControlPanel(); markUnsaved(); } }
+        function redo() { if (historyIndex < historyStack.length - 1) { historyIndex++; elements = safeParse(JSON.parse(historyStack[historyIndex])); elements.forEach(e => { if (e.type === 'image' && e.url) { e.imgObj = new Image(); e.imgObj.crossOrigin = "Anonymous"; e.imgObj.onload = drawCanvas; e.imgObj.src = e.url; } }); selectedElement = null; drawCanvas(); updateControlPanel(); markUnsaved(); } }
+
+        async function cleanupDB() { const m = prompt('몇 개월 이전 데이터를 지울까요? (예: 3)', '3'); if (!m || isNaN(m)) return; if (confirm(`저장된 지 ${m}개월이 지난 작업내역을 모두 삭제합니다.`)) { const res = await fetch(`/api/admin/ads/cleanup?months=${m}`, { method: 'DELETE' }); const d = await res.json(); if (d.success) alert(`총 ${d.deletedCount}건 삭제 완료!`); } }
+
+        // --- 회원 관리 시스템 V1.6 ---
+        async function openMemberInfo() {
+            const uid = localStorage.getItem('v8_user_id');
+            const res = await fetch(`/api/users/${uid}`);
+            const u = await res.json();
+            document.getElementById('myId').value = u.id;
+            document.getElementById('myName').value = u.name || '';
+            document.getElementById('myContact').value = u.contact || '';
+            document.getElementById('myPassword').value = '';
+            document.getElementById('myOldPassword').value = '';
+            openModal('memberInfoModal');
+        }
+        async function saveMyInfo() {
+            const d = {
+                id: document.getElementById('myId').value,
+                oldPassword: document.getElementById('myOldPassword').value,
+                newPassword: document.getElementById('myPassword').value,
+                name: document.getElementById('myName').value,
+                contact: document.getElementById('myContact').value
+            };
+            if (!d.oldPassword) return alert("현재 비밀번호를 입력해야 저장할 수 있습니다.");
+            const res = await fetch('/api/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+            const r = await res.json();
+            alert(r.message);
+            if (r.success) closeModal('memberInfoModal');
+        }
+        async function openMemberAdmin() {
+            openModal('memberAdminModal');
+            loadUserList();
+        }
+        async function loadUserList() {
+            const res = await fetch('/api/admin/users');
+            const users = await res.json();
+            const b = document.getElementById('userListBody');
+            b.innerHTML = users.map(u => `<tr style="border-bottom:1px solid var(--border);"><td style="padding:10px;">${u.id}</td><td style="padding:10px;">${u.name || '-'}</td><td style="padding:10px;">${u.role}</td><td style="padding:10px; display:flex; gap:4px;">
+                <button class="btn-tool" style="color:var(--primary);" onclick="showEditUser('${u.id}')">📝 수정</button>
+                <button class="btn-tool" style="color:var(--danger);" onclick="deleteUser('${u.id}')">🗑 삭제</button>
+            </td></tr>`).join('');
+        }
+        let currentEditingUserId = null;
+        function showAddUser() {
+            currentEditingUserId = null;
+            document.getElementById('userEditTitle').innerText = "➕ 신규 회원 추가";
+            document.getElementById('editUserId').value = '';
+            document.getElementById('editUserId').readOnly = false;
+            document.getElementById('editUserPw').value = '';
+            document.getElementById('editUserName').value = '';
+            document.getElementById('editUserContact').value = '';
+            document.getElementById('editUserRole').value = 'employee';
+            openModal('userEditModal');
+        }
+        async function showEditUser(id) {
+            currentEditingUserId = id;
+            const res = await fetch(`/api/users/${id}`);
+            const u = await res.json();
+            document.getElementById('userEditTitle').innerText = "📝 회원 정보 수정";
+            document.getElementById('editUserId').value = u.id;
+            document.getElementById('editUserId').readOnly = true;
+            document.getElementById('editUserPw').value = '';
+            document.getElementById('editUserName').value = u.name || '';
+            document.getElementById('editUserContact').value = u.contact || '';
+            document.getElementById('editUserRole').value = u.role;
+            openModal('userEditModal');
+        }
+        async function saveUser() {
+            const d = {
+                id: document.getElementById('editUserId').value,
+                password: document.getElementById('editUserPw').value,
+                name: document.getElementById('editUserName').value,
+                contact: document.getElementById('editUserContact').value,
+                role: document.getElementById('editUserRole').value
+            };
+            const method = currentEditingUserId ? 'PUT' : 'POST';
+            const url = currentEditingUserId ? `/api/admin/users/${currentEditingUserId}` : '/api/admin/users';
+            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+            const r = await res.json();
+        }
+
+        async function deleteUser(id) {
+            if (id === 'admin') return alert("마스터 관리자는 삭제할 수 없습니다.");
+            if (!confirm(`아이디 [${id}] 회원을 정말 삭제할까요?`)) return;
+            const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+            if ((await res.json()).success) { alert("삭제되었습니다."); loadUserList(); }
+        }
+
+        let cropTargetType = 'bg';
+        let cropSourceImg = new Image();
+        let cropActionState = 'none', cropStartX = 0, cropStartY = 0;
+
+        function openCropModal(type) {
+            cropTargetType = type;
+            if (type === 'bg') {
+                if (!bgImageUrl) return alert("배경 이미지가 없습니다.");
+                cropSourceImg.src = bgImageUrl;
+            } else if (type === 'element') {
+                const img = selectedElement.imgObj;
+                if (!img || !img.src) return alert("이미지가 없습니다.");
+                cropSourceImg.src = img.src;
+            } else if (type === 'canvas') {
+                const prevSel = selectedElement; const prevSels = [...window.selectedElements];
+                selectedElement = null; window.selectedElements = []; drawCanvas();
+                cropSourceImg.src = canvas.toDataURL('image/png');
+                selectedElement = prevSel; window.selectedElements = prevSels; drawCanvas();
+            }
+            cropSourceImg.onload = () => {
+                const c = document.getElementById('cropCanvas');
+                c.width = cropSourceImg.naturalWidth;
+                c.height = cropSourceImg.naturalHeight;
+                resetCropSelection();
+                openModal('cropModal');
+            };
+        }
+
+        function resetCropSelection() {
+            const c = document.getElementById('cropCanvas');
+            document.getElementById('cropX').value = 0;
+            document.getElementById('cropY').value = 0;
+            document.getElementById('cropW').value = c.width;
+            document.getElementById('cropH').value = c.height;
+            drawCropPreview();
+        }
+
+        function drawCropPreview() {
+            const c = document.getElementById('cropCanvas'), ctx2 = c.getContext('2d');
+            const x = parseInt(document.getElementById('cropX').value) || 0;
+            const y = parseInt(document.getElementById('cropY').value) || 0;
+            const w = parseInt(document.getElementById('cropW').value) || 0;
+            const h = parseInt(document.getElementById('cropH').value) || 0;
+            ctx2.clearRect(0, 0, c.width, c.height);
+            ctx2.drawImage(cropSourceImg, 0, 0);
+            ctx2.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx2.fillRect(0, 0, c.width, y);
+            ctx2.fillRect(0, y, x, h);
+            ctx2.fillRect(x + w, y, c.width - (x + w), h);
+            ctx2.fillRect(0, y + h, c.width, c.height - (y + h));
+            ctx2.strokeStyle = '#2ecc71';
+            ctx2.lineWidth = Math.max(2, c.width/300);
+            ctx2.strokeRect(x, y, w, h);
+
+            // 8방위 핸들 그리기
+            ctx2.fillStyle = '#fff';
+            const hs = Math.max(6, c.width/100);
+            const drawH = (hx, hy) => { ctx2.fillRect(hx - hs/2, hy - hs/2, hs, hs); ctx2.strokeRect(hx - hs/2, hy - hs/2, hs, hs); };
+            drawH(x, y); drawH(x + w/2, y); drawH(x + w, y);
+            drawH(x, y + h/2); drawH(x + w, y + h/2);
+            drawH(x, y + h); drawH(x + w/2, y + h); drawH(x + w, y + h);
+        }
+
+        function initCropEvents() {
+            const cc = document.getElementById('cropCanvas');
+            if(!cc) return;
+            cc.onmousedown = e => {
+                const r = cc.getBoundingClientRect(), s = cc.width / r.width;
+                const mx = (e.clientX - r.left) * s, my = (e.clientY - r.top) * s;
+                const x = parseInt(document.getElementById('cropX').value);
+                const y = parseInt(document.getElementById('cropY').value);
+                const w = parseInt(document.getElementById('cropW').value);
+                const h = parseInt(document.getElementById('cropH').value);
+                const hs = Math.max(10, cc.width/50); // 클릭 감지 반경
+                
+                const insideH = (hx, hy) => Math.abs(mx - hx) <= hs && Math.abs(my - hy) <= hs;
+                if (insideH(x, y)) cropActionState = 'nw';
+                else if (insideH(x + w/2, y)) cropActionState = 'n';
+                else if (insideH(x + w, y)) cropActionState = 'ne';
+                else if (insideH(x, y + h/2)) cropActionState = 'w';
+                else if (insideH(x + w, y + h/2)) cropActionState = 'e';
+                else if (insideH(x, y + h)) cropActionState = 'sw';
+                else if (insideH(x + w/2, y + h)) cropActionState = 's';
+                else if (insideH(x + w, y + h)) cropActionState = 'se';
+                else {
+                    cropActionState = 'drag';
+                    cropStartX = mx; cropStartY = my;
+                }
+            };
+            cc.onmousemove = e => {
+                if (cropActionState === 'none') return;
+                const r = cc.getBoundingClientRect(), s = cc.width / r.width;
+                const mx = (e.clientX - r.left) * s, my = (e.clientY - r.top) * s;
+                let x = parseInt(document.getElementById('cropX').value);
+                let y = parseInt(document.getElementById('cropY').value);
+                let w = parseInt(document.getElementById('cropW').value);
+                let h = parseInt(document.getElementById('cropH').value);
+
+                if (cropActionState === 'drag') {
+                    const dx = mx - cropStartX, dy = my - cropStartY;
+                    const nx = Math.min(cropStartX, mx), ny = Math.min(cropStartY, my);
+                    const nw = Math.abs(cropStartX - mx), nh = Math.abs(cropStartY - my);
+                    document.getElementById('cropX').value = Math.round(nx);
+                    document.getElementById('cropY').value = Math.round(ny);
+                    document.getElementById('cropW').value = Math.round(nw);
+                    document.getElementById('cropH').value = Math.round(nh);
+                } else {
+                    if (cropActionState.includes('n')) { const oldY = y; y = my; h += (oldY - my); }
+                    if (cropActionState.includes('s')) { h = my - y; }
+                    if (cropActionState.includes('w')) { const oldX = x; x = mx; w += (oldX - mx); }
+                    if (cropActionState.includes('e')) { w = mx - x; }
+                    if (w < 10) w = 10; if (h < 10) h = 10;
+                    document.getElementById('cropX').value = Math.round(x);
+                    document.getElementById('cropY').value = Math.round(y);
+                    document.getElementById('cropW').value = Math.round(w);
+                    document.getElementById('cropH').value = Math.round(h);
+                }
+                drawCropPreview();
+            };
+            window.addEventListener('mouseup', () => cropActionState = 'none');
+        }
+        setTimeout(initCropEvents, 500);
+
+        function applyCrop() {
+            const x = parseInt(document.getElementById('cropX').value), y = parseInt(document.getElementById('cropY').value);
+            const w = parseInt(document.getElementById('cropW').value), h = parseInt(document.getElementById('cropH').value);
+            if (w < 10 || h < 10) return alert("너무 작습니다.");
+            
+            const tc = document.createElement('canvas');
+            tc.width = w; tc.height = h;
+            const tctx = tc.getContext('2d', {willReadFrequently:true});
+
+            if (cropTargetType === 'bg') {
+                tctx.drawImage(cropSourceImg, x, y, w, h, 0, 0, w, h);
+                bgImageUrl = tc.toDataURL('image/png');
+                bgImageObj.src = bgImageUrl;
+            } else if (cropTargetType === 'element') {
+                tctx.drawImage(cropSourceImg, x, y, w, h, 0, 0, w, h);
+                const dataUrl = tc.toDataURL('image/png');
+                selectedElement.url = dataUrl;
+                selectedElement.imgObj.src = dataUrl;
+                selectedElement.w = w;
+                selectedElement.h = h;
+                updateControlPanel();
+            } else if (cropTargetType === 'canvas') {
+                if (bgImageUrl && bgImageObj.src) {
+                    const bc = document.createElement('canvas');
+                    bc.width = w; bc.height = h;
+                    bc.getContext('2d').drawImage(bgImageObj, x, y, w, h, 0, 0, w, h);
+                    bgImageUrl = bc.toDataURL('image/png');
+                    bgImageObj.src = bgImageUrl;
+                }
+                elements.forEach(el => { el.x -= x; el.y -= y; });
+                canvas.width = w; canvas.height = h;
+                document.getElementById('canvasW').value = w;
+                document.getElementById('canvasH').value = h;
+                selectedElement = null; window.selectedElements = [];
+                setTimeout(autoFitCanvas, 100);
+            }
+            closeModal('cropModal');
+            drawCanvas();
+            saveHistory();
+        }
+        function exportTemplates() { if (allTemplates.length === 0) return alert("백업할 템플릿이 없습니다."); const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allTemplates)), a = document.createElement('a'); a.href = d; a.download = "템플릿백업_" + new Date().toISOString().slice(0, 10) + ".json"; document.body.appendChild(a); a.click(); a.remove(); }
+        async function importTemplates(e) { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = async ev => { try { const ts = JSON.parse(ev.target.result); if (!Array.isArray(ts)) throw new Error(); let c = 0; for (const t of ts) { const d = { title: t.title + " (복원)", bg_image_url: t.bg_image_url, thumbnail_base64: t.thumbnail_base64, zone_data: safeParse(t.zone_data), shape_data: safeParse(t.shape_data), canvas_width: t.canvas_width || 720, canvas_height: t.canvas_height || 420, is_active: t.is_active || 1 }; const rs = await fetch('/api/admin/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); if ((await rs.json()).success) c++; } alert(`총 ${c}개 복원 성공!`); loadTemplates(); } catch (err) { alert("오류: 올바른 백업 파일(.json)이 아닙니다."); } e.target.value = ''; }; r.readAsText(f); }
+
+        async function loadTemplates() { const res = await fetch('/api/admin/templates'); allTemplates = await res.json(); renderTemplateList(allTemplates); }
+        function filterTemplates() { renderTemplateList(allTemplates.filter(t => t.title.toLowerCase().includes(document.getElementById('tplSearch').value.toLowerCase()))); }
+        function renderTemplateList(list) { const c = document.getElementById('templateList'); c.innerHTML = ''; list.forEach(t => { const d = document.createElement('div'); d.className = `tpl-item ${t.id === currentTemplateId ? 'active' : ''}`; d.onclick = () => { if (hasUnsavedChanges && !confirm('저장되지 않은 변경사항 무시?')) return; selectTemplate(t); }; d.innerHTML = `<button class="btn-quick-clone" onclick="triggerTemplateClone(event,${t.id})" style="position:absolute;top:5px;right:5px;z-index:9;padding:4px 8px;font-size:12px;background:#f39c12;color:#fff;border:none;border-radius:4px;cursor:pointer;">👯복제</button><img src="${t.thumbnail_base64 || ''}" class="tpl-thumb"><div class="tpl-info"><strong>${t.title}</strong>${t.is_active === 1 ? '<span class="badge active">배포됨</span>' : '<span class="badge draft">임시저장</span>'}</div>`; d.style.position = 'relative'; c.appendChild(d); }); }
+        function triggerTemplateClone(e, id) { e.stopPropagation(); const t = allTemplates.find(r => r.id === id); if (t) { if (hasUnsavedChanges && !confirm('저장되지 않은 변경사항 무시?')) return; selectTemplate(t); setTimeout(() => { currentTemplateId = null; document.getElementById('tplTitle').value += ' (복사본)'; markUnsaved(); alert("복제되었습니다! '임시저장'을 눌러 백업하세요."); }, 300); } }
+        async function downloadFile(type) { 
+            const cy = document.getElementById('tplTitle').value.trim(), dt = new Date(), ds = String(dt.getFullYear()).slice(2) + String(dt.getMonth() + 1).padStart(2, '0') + String(dt.getDate()).padStart(2, '0'); 
+            let fa = []; if (cy) fa.push(cy); fa.push(ds); const fn = fa.join('_'); 
+            
+            // 🐛 버그 수정: 다운로드 시 선택 핸들 숨기기
+            const prevSel = selectedElement; const prevSels = [...window.selectedElements];
+            selectedElement = null; window.selectedElements = []; drawCanvas();
+
+            if (type === 'jpg') { 
+                const l = document.createElement('a'); l.download = `${fn}.jpg`; l.href = canvas.toDataURL('image/jpeg', 0.8); l.click(); 
+                // 원상복구
+                selectedElement = prevSel; window.selectedElements = prevSels; drawCanvas();
+            } else { 
+                document.getElementById('loadingModal').style.display = 'flex'; 
+                try { 
+                    const rs = await fetch('/Pretendard-Regular.ttf'), bs = new Uint8Array(await rs.arrayBuffer()); 
+                    let b = ''; for (let i = 0; i < bs.length; i++)b += String.fromCharCode(bs[i]); 
+                    const p = new window.jspdf.jsPDF({ orientation: canvas.width > canvas.height ? 'l' : 'p', unit: 'px', format: [canvas.width, canvas.height] }); 
+                    p.addFileToVFS('font.ttf', window.btoa(b)); p.addFont('font.ttf', 'Font', 'normal'); p.setFont('Font'); 
+                    p.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, canvas.width, canvas.height); 
+                    p.setGState(new p.GState({ opacity: 0 })); 
+                    elements.forEach(e => { if (!e.text) return; p.setFontSize(e.size); const ls = String(e.text).split('\n'), lh = e.size * ((e.lineHeight || 120) / 100); ls.forEach((l, i) => p.text(l, e.x, e.y - (ls.length * lh) / 2 + i * lh, { align: e.align, baseline: 'top', charSpace: e.letterSpacing || 0 })); }); 
+                    p.save(`${fn}.pdf`); 
+                } catch (e) { alert("PDF 생성오류"); } 
+                finally { 
+                    if (document.getElementById('loadingModal')) document.getElementById('loadingModal').style.display = 'none'; 
+                    // 원상복구
+                    selectedElement = prevSel; window.selectedElements = prevSels; drawCanvas();
+                } 
+            } 
+        }
+
+        function createNewTemplate() { if (hasUnsavedChanges && !confirm('새 배경이미지로 템플릿 생성?')) return; if (isMagicMode) stopMagicMode(); currentTemplateId = null; bgImageUrl = ''; bgImageObj.src = ''; elements = []; selectedElement = null; document.getElementById('tplTitle').value = ''; document.getElementById('btnDeleteTpl').style.display = 'none'; document.getElementById('btnCancelDeploy').style.display = 'none'; document.getElementById('canvasW').value = 720; document.getElementById('canvasH').value = 420; resizeCanvasManual(); historyStack = []; historyIndex = -1; saveHistory(); markSaved(); updateControlPanel(); renderTemplateList(allTemplates); }
+        function createBlankCanvas() { const w=document.getElementById('blankW').value,h=document.getElementById('blankH').value; if(!w||!h)return alert('해상도 입력!'); if(hasUnsavedChanges&&!confirm('저장안된 내용은 지워집니다. 빈 화면을 생성할까요?'))return; closeModal('blankSetupModal'); if(isMagicMode)stopMagicMode(); currentTemplateId=null; bgImageUrl=''; bgImageObj.src=''; elements=[]; selectedElement=null; document.getElementById('tplTitle').value='새 빈 화면'; document.getElementById('btnDeleteTpl').style.display='none'; document.getElementById('btnCancelDeploy').style.display='none'; document.getElementById('canvasW').value=w; document.getElementById('canvasH').value=h; canvas.width=w; canvas.height=h; historyStack=[]; historyIndex=-1; saveHistory(); markUnsaved(); updateControlPanel(); renderTemplateList(allTemplates); drawCanvas(); setTimeout(autoFitCanvas,100); }
+        function duplicateTemplate() { if (!currentTemplateId) return alert("템플릿을 선택하세요."); currentTemplateId = null; document.getElementById('tplTitle').value += ' (복사본)'; document.getElementById('btnDeleteTpl').style.display = 'none'; document.getElementById('btnCancelDeploy').style.display = 'none'; markUnsaved(); alert("복제되었습니다. 저장/배포를 누르세요."); renderTemplateList(allTemplates); }
+
+        // 🚀 데이터 충돌을 원천 차단하는 템플릿 로드
+        function selectTemplate(tpl) {
+            try {
+                if (isMagicMode) stopMagicMode();
+                currentTemplateId = tpl.id; document.getElementById('tplTitle').value = tpl.title; document.getElementById('btnDeleteTpl').style.display = 'inline-block'; document.getElementById('btnCancelDeploy').style.display = tpl.is_active === 1 ? 'inline-block' : 'none';
+                canvas.width = tpl.canvas_width || 720; canvas.height = tpl.canvas_height || 420; document.getElementById('canvasW').value = canvas.width; document.getElementById('canvasH').value = canvas.height;
+                bgImageUrl = tpl.bg_image_url;
+
+                elements = [...safeParse(tpl.shape_data), ...safeParse(tpl.zone_data).map(z => ({ ...z, text: z.text || z.placeholder || '' }))];
+                elements.forEach(e => { if (e.type === 'image' && e.url) { e.imgObj = new Image(); e.imgObj.crossOrigin = "Anonymous"; e.imgObj.onload = drawCanvas; e.imgObj.src = e.url; } });
+
+                selectedElement = null; historyStack = []; historyIndex = -1; saveHistory(); markSaved(); updateControlPanel();
+                if (bgImageUrl) { bgImageObj.onload = () => { drawCanvas(); setTimeout(autoFitCanvas, 100); }; bgImageObj.src = bgImageUrl; } else { drawCanvas(); setTimeout(autoFitCanvas, 100); }
+                renderTemplateList(allTemplates);
+            } catch (err) { alert("템플릿 열기 오류: " + err.message); }
+        }
+
+        async function uploadImage(ev, t) { const f = ev.target.files[0]; if (!f) return; const fd = new FormData(); fd.append('image', f); const rs = await fetch('/api/upload-image', { method: 'POST', body: fd }), d = await rs.json(); if (d.success) { if (t === 'bg') { bgImageUrl = d.imageUrl; bgImageObj.onload = () => { canvas.width = bgImageObj.naturalWidth; canvas.height = bgImageObj.naturalHeight; document.getElementById('canvasW').value = canvas.width; document.getElementById('canvasH').value = canvas.height; markUnsaved(); drawCanvas(); setTimeout(autoFitCanvas, 100); }; bgImageObj.src = bgImageUrl; } else { const i = new Image(); i.crossOrigin = "Anonymous"; i.onload = () => { elements.push({ id: genId('e'), type: 'image', url: d.imageUrl, imgObj: i, x: canvas.width / 2, y: canvas.height / 2, w: i.naturalWidth / 2, h: i.naturalHeight / 2, opacity: 1, frame: 'none', ratioLock: true, brightness: 100, contrast: 100 }); saveHistory(); drawCanvas(); }; i.src = d.imageUrl; } } }
+        function addQRCode() { const u = prompt('URL이나 번호:', 'https://'); if (!u) return; const q = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=' + encodeURIComponent(u), i = new Image(); i.crossOrigin = "Anonymous"; i.onload = () => { elements.push({ id: genId('e'), type: 'image', url: q, imgObj: i, x: canvas.width / 2, y: canvas.height / 2, w: 150, h: 150, opacity: 1, frame: 'none', ratioLock: true }); saveHistory(); updateControlPanel(); drawCanvas(); }; i.src = q; }
+        function addElement(t, s) { let el = { id: genId('e'), type: t, x: canvas.width / 2, y: canvas.height / 2, color: '#000', opacity: 1, locked: false }; if (t === 'text') el = { ...el, placeholder: s ? '' : '가이드', text: s || '텍스트', size: 40, weight: 700, align: 'center', letterSpacing: 0, lineHeight: 120, strokeW: 0, strokeC: '#fff', shadow: false, scaleX: 1, scaleY: 1, autoScale: true, w: 250 }; else if (t === 'shape') el = { ...el, shapeType: s, w: 150, h: 150, color: '#3498db', strokeW: 0, strokeC: '#000', ratioLock: false }; elements.push(el); selectedElement = el; saveHistory(); updateControlPanel(); drawCanvas(); }
+        function toggleLock() { if (selectedElement) { selectedElement.locked = !selectedElement.locked; updateControlPanel(); drawCanvas(); saveHistory(); } }
+        function syncWeight(s) { if (isUpdatingPanel || !selectedElement) return; const se = document.getElementById('ctrlWeightSel'), n = document.getElementById('ctrlWeightNum'); if (s === 'sel') n.value = se.value; else { let v = parseInt(n.value); if (v < 100) v = 100; if (v > 900) v = 900; n.value = v; if (v <= 400) se.value = "300"; else if (v <= 600) se.value = "500"; else if (v <= 800) se.value = "700"; else se.value = "900"; } updateElem(); }
+
+        function startMagicMode() { const w = document.getElementById('magicW').value, h = document.getElementById('magicH').value, f = document.getElementById('magicRefInput'); if (!f.files[0]) return alert('이미지 선택!'); createNewTemplate(); canvas.width = w; canvas.height = h; document.getElementById('canvasW').value = w; document.getElementById('canvasH').value = h; const r = new FileReader(); r.onload = e => { refImageObj = new Image(); refImageObj.onload = () => { isMagicMode = true; closeModal('magicSetupModal'); document.getElementById('magicBadge').style.display = 'block'; document.getElementById('normalActionBtns').style.display = 'none'; document.getElementById('magicActionBtns').style.display = 'block'; autoFitCanvas(); drawCanvas(); }; refImageObj.src = e.target.result; }; r.readAsDataURL(f.files[0]); }
+        function stopMagicMode() { isMagicMode = false; refImageObj = null; document.getElementById('magicBadge').style.display = 'none'; document.getElementById('normalActionBtns').style.display = 'flex'; document.getElementById('magicActionBtns').style.display = 'none'; drawCanvas(); }
+        function getAvgColor(x, y, w, h) { const tc = document.createElement('canvas'); tc.width = canvas.width; tc.height = canvas.height; const tx = tc.getContext('2d'); tx.drawImage(refImageObj, 0, 0, canvas.width, canvas.height); const dt = tx.getImageData(x, y, w, h).data; let r = 0, g = 0, b = 0, c = 0; for (let i = 0; i < dt.length; i += 4) { r += dt[i]; g += dt[i + 1]; b += dt[i + 2]; c++; } return "#" + ((1 << 24) + (Math.floor(r / c) << 16) + (Math.floor(g / c) << 8) + Math.floor(b / c)).toString(16).slice(1); }
+        async function confirmMagicElement(type) {
+            closeModal('magicTypeModal'); const x = Math.min(magicRect.startX, magicRect.endX), y = Math.min(magicRect.startY, magicRect.endY), w = Math.abs(magicRect.startX - magicRect.endX), h = Math.abs(magicRect.startY - magicRect.endY); if (w < 5 || h < 5) return;
+            if (type === 'shape') { elements.unshift({ id: genId('m'), type: 'shape', shapeType: 'rect', x: x + w / 2, y: y + h / 2, w, h, color: getAvgColor(x, y, w, h), opacity: 1, strokeW: 0, strokeC: '#000', locked: false, ratioLock: false }); drawCanvas(); saveHistory(); }
+            else {
+                openModal('processingModal');
+                try {
+                    const tc = document.createElement('canvas'); tc.width = w; tc.height = h; tc.getContext('2d').drawImage(refImageObj, x, y, w, h, 0, 0, w, h); const rs = await Tesseract.recognize(tc.toDataURL(), 'kor+eng');
+                    let txt = rs.data.text.trim().replace(/\n/g, ' ') || "인식실패";
+                    if (type === 'phone') { const m = txt.replace(/\s+/g, '').match(/01[016789]-?\d{3,4}-?\d{4}|0\d{1,2}-?\d{3,4}-?\d{4}/); if (m) { let cn = m[0].replace(/-/g, ''); if (cn.length === 11) txt = cn.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3'); else if (cn.length === 10) txt = cn.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'); else if (cn.startsWith('02')) txt = cn.replace(/(\d{2})(\d{3,4})(\d{4})/, '$1-$2-$3'); else txt = cn.replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3'); } else { alert('번호 못 찾음.'); } }
+                    const sz = h; ctx.font = `900 ${sz}px ${FONT}`; const mw = ctx.measureText(txt).width, scX = w / mw;
+                    elements.push({ id: genId('m'), type: 'text', x: x + w / 2, y: y + h / 2, text: txt, placeholder: '', size: sz, weight: 900, align: 'center', color: '#000', opacity: 1, scaleX: 1, scaleY: 1, autoScale: true, w: w, letterSpacing: 0, lineHeight: 120, strokeW: 0, strokeC: '#fff', shadow: false, locked: false }); drawCanvas(); saveHistory();
+                } finally { closeModal('processingModal'); }
+            }
+        }
+
+        function drawClipPath(cx, t, x, y, w, h) { cx.beginPath(); if (t === 'circle') cx.arc(x, y, Math.min(w, h) / 2, 0, Math.PI * 2); else if (t === 'rounded') { const r = arguments[6] !== undefined ? arguments[6] : 15; cx.moveTo(x - w / 2 + r, y - h / 2); cx.arcTo(x + w / 2, y - h / 2, x + w / 2, y + h / 2, r); cx.arcTo(x + w / 2, y + h / 2, x - w / 2, y + h / 2, r); cx.arcTo(x - w / 2, y + h / 2, x - w / 2, y - h / 2, r); cx.arcTo(x - w / 2, y - h / 2, x + w / 2, y - h / 2, r); } else if (t === 'polygon') { const s = 6, sz = Math.min(w, h) / 2; for (let i = 0; i <= s; i++) { const a = i * 2 * Math.PI / s - Math.PI / 2; cx[i === 0 ? 'moveTo' : 'lineTo'](x + sz * Math.cos(a), y + sz * Math.sin(a)); } } else if (t === 'star') { const s = 5, or = Math.min(w, h) / 2, ir = or / 2; for (let i = 0; i <= s * 2; i++) { const r = i % 2 === 0 ? or : ir, a = i * Math.PI / s - Math.PI / 2; cx[i === 0 ? 'moveTo' : 'lineTo'](x + r * Math.cos(a), y + r * Math.sin(a)); } } }
+        function drawCanvas() {
+            try {
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                if (isMagicMode && refImageObj) { ctx.save(); ctx.globalAlpha = 0.5; ctx.drawImage(refImageObj, 0, 0, canvas.width, canvas.height); ctx.restore(); } else if (bgImageObj.src && bgImageObj.src !== location.href) ctx.drawImage(bgImageObj, 0, 0, bgImageObj.naturalWidth || canvas.width, bgImageObj.naturalHeight || canvas.height);
+                elements.forEach(e => {
+                    ctx.save(); ctx.globalAlpha = e.opacity || 1; ctx.fillStyle = e.color;
+                    if (e.type === 'shape') { ctx.beginPath(); if (e.shapeType === 'rect') ctx.rect(e.x - e.w / 2, e.y - e.h / 2, e.w, e.h); else if (e.shapeType === 'circle') ctx.arc(e.x, e.y, Math.min(e.w, e.h) / 2, 0, Math.PI * 2); else if (e.shapeType === 'round') drawClipPath(ctx, 'rounded', e.x, e.y, e.w, e.h, e.borderRadius); else if (e.shapeType === 'triangle') { ctx.moveTo(e.x, e.y - e.h / 2); ctx.lineTo(e.x + e.w / 2, e.y + e.h / 2); ctx.lineTo(e.x - e.w / 2, e.y + e.h / 2); ctx.closePath(); } else if (e.shapeType === 'line') { ctx.moveTo(e.x - e.w / 2, e.y); ctx.lineTo(e.x + e.w / 2, e.y); ctx.strokeStyle = e.color; ctx.lineWidth = e.h; ctx.stroke(); ctx.beginPath(); } if (e.shapeType !== 'line') { ctx.fill(); if (e.strokeW > 0) { ctx.strokeStyle = e.strokeC; ctx.lineWidth = e.strokeW; ctx.stroke(); } } }
+                    else if (e.type === 'image' && e.imgObj) { let f = ''; if (e.brightness !== undefined && e.brightness !== 100) f += `brightness(${e.brightness}%) `; if (e.contrast !== undefined && e.contrast !== 100) f += `contrast(${e.contrast}%) `; if (f) ctx.filter = f.trim(); if (e.frame && e.frame !== 'none') { drawClipPath(ctx, e.frame, e.x, e.y, e.w, e.h); ctx.clip(); } ctx.drawImage(e.imgObj, e.x - e.w / 2, e.y - e.h / 2, e.w, e.h); }
+                    else if (e.type === 'text') {
+                        ctx.translate(e.x, e.y);
+                        let finalScaleX = e.scaleX || 1;
+                        ctx.font = `${e.weight || 400} ${e.size}px ${FONT}`;
+                        ctx.textAlign = e.align || 'center';
+                        ctx.textBaseline = 'top';
+                        ctx.letterSpacing = (e.letterSpacing || 0) + "px";
+                        const tStr = e.text != null ? String(e.text) : '';
+                        const ls = tStr.split('\n');
+                        if (e.autoScale && e.w > 0) {
+                            let maxW = 0;
+                            ls.forEach(l => { let mw = ctx.measureText(l).width; if (mw > maxW) maxW = mw; });
+                            if (maxW > 0 && maxW * finalScaleX > e.w) finalScaleX = e.w / maxW;
+                        }
+                        ctx.scale(finalScaleX, e.scaleY || 1);
+                        if (e.shadow) { ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3; }
+                        const lh = e.size * ((e.lineHeight || 120) / 100), sy = -(ls.length * lh) / 2;
+                        ls.forEach((l, i) => {
+                            const ly = sy + (i * lh);
+                            if (e.strokeW > 0) { ctx.shadowColor = 'transparent'; ctx.strokeStyle = e.strokeC; ctx.lineWidth = e.strokeW; ctx.lineJoin = 'round'; ctx.strokeText(l, 0, ly); }
+                            if (e.shadow) ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                            ctx.fillText(l, 0, ly);
+                        });
+                    }
+                    ctx.restore(); if (!isMagicMode && !isPreviewMode) { if (window.selectedElements && window.selectedElements.length > 1 && window.selectedElements.some(sel => sel.id === e.id)) drawHandles(e, true); else if (selectedElement && (selectedElement.id === e.id || (selectedElement.groupId && selectedElement.groupId === e.groupId))) drawHandles(e, selectedElement.id !== e.id); }
+                });
+                if (!isMagicMode && !isPreviewMode && snapGuideX !== null) { ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(snapGuideX, 0); ctx.lineTo(snapGuideX, canvas.height); ctx.stroke(); } if (!isMagicMode && !isPreviewMode && snapGuideY !== null) { ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(0, snapGuideY); ctx.lineTo(canvas.width, snapGuideY); ctx.stroke(); } if (isMagicMode && magicRect.drawing) { ctx.strokeStyle = '#ff69b4'; ctx.lineWidth = 2; ctx.setLineDash([6, 3]); ctx.strokeRect(magicRect.startX, magicRect.startY, magicRect.endX - magicRect.startX, magicRect.endY - magicRect.startY); ctx.fillStyle = 'rgba(255,105,180,0.2)'; ctx.fillRect(magicRect.startX, magicRect.startY, magicRect.endX - magicRect.startX, magicRect.endY - magicRect.startY); } if (window.selectionBox && window.selectionBox.active) { ctx.fillStyle = 'rgba(52,152,219,0.3)'; ctx.strokeStyle = '#3498db'; ctx.lineWidth = 1; ctx.setLineDash([5, 5]); const sx = Math.min(window.selectionBox.startX, window.selectionBox.endX), sy = Math.min(window.selectionBox.startY, window.selectionBox.endY), w = Math.abs(window.selectionBox.endX - window.selectionBox.startX), h = Math.abs(window.selectionBox.endY - window.selectionBox.startY); ctx.fillRect(sx, sy, w, h); ctx.strokeRect(sx, sy, w, h); } ctx.setLineDash([]);
+            } catch (err) { console.error(err); }
+        }
+        function drawHandles(e, ig) { ctx.save(); ctx.strokeStyle = e.locked ? '#e74c3c' : '#00a8ff'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); let b = getBounds(e); ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.setLineDash([]); ctx.fillStyle = '#fff'; if (!e.locked && !ig) { const dh = (hx, hy) => { ctx.fillRect(hx - 4, hy - 4, 8, 8); ctx.strokeRect(hx - 4, hy - 4, 8, 8); }; dh(b.x, b.y); dh(b.x + b.w / 2, b.y); dh(b.x + b.w, b.y); dh(b.x, b.y + b.h / 2); dh(b.x + b.w, b.y + b.h / 2); dh(b.x, b.y + b.h); dh(b.x + b.w / 2, b.y + b.h); dh(b.x + b.w, b.y + b.h); } ctx.restore(); }
+        function getBounds(e) { if (e.type === 'shape' || e.type === 'image') return { x: e.x - e.w / 2, y: e.y - e.h / 2, w: e.w, h: e.h }; ctx.font = `${e.weight || 400} ${e.size}px ${FONT}`; ctx.letterSpacing = (e.letterSpacing || 0) + "px"; const tStr = e.text != null ? String(e.text) : ''; const ls = tStr.split('\n'); let mW = 0; ls.forEach(l => { const w = ctx.measureText(l).width; if (w > mW) mW = w; }); const th = ls.length * (e.size * ((e.lineHeight || 120) / 100)), scX = e.scaleX || 1, scY = e.scaleY || 1, sW = mW * scX, sH = th * scY; let sx = e.x - sW / 2; if (e.align === 'left') sx = e.x; if (e.align === 'right') sx = e.x - sW; return { x: sx - 5, y: (e.y - sH / 2) - 5, w: sW + 10, h: sH + 10 }; }
+
+        window.selectedElements = []; window.selectionBox = null; window.clipboardElements = [];
+        canvas.addEventListener('mousedown', e => { if (isPreviewMode) return; const r = canvas.getBoundingClientRect(), mx = (e.clientX - r.left) / currentZoom, my = (e.clientY - r.top) / currentZoom; if (isMagicMode) { magicRect.startX = mx; magicRect.startY = my; magicRect.drawing = true; return; } if (selectedElement && !selectedElement.locked && window.selectedElements.length <= 1) { const b = getBounds(selectedElement); const iH = (hx, hy) => Math.abs(mx - hx) <= 8 && Math.abs(my - hy) <= 8; if (iH(b.x, b.y)) actionState = 'nw'; else if (iH(b.x + b.w / 2, b.y)) actionState = 'n'; else if (iH(b.x + b.w, b.y)) actionState = 'ne'; else if (iH(b.x, b.y + b.h / 2)) actionState = 'w'; else if (iH(b.x + b.w, b.y + b.h / 2)) actionState = 'e'; else if (iH(b.x, b.y + b.h)) actionState = 'sw'; else if (iH(b.x + b.w / 2, b.y + b.h)) actionState = 's'; else if (iH(b.x + b.w, b.y + b.h)) actionState = 'se'; if (actionState !== 'none') { origX = selectedElement.x; origY = selectedElement.y; origW = selectedElement.w || 0; origH = selectedElement.h || 0; origSize = selectedElement.size || 0; return; } } actionState = 'none'; snapGuideX = null; snapGuideY = null; let clickedEl = null; for (let i = elements.length - 1; i >= 0; i--) { const b = getBounds(elements[i]); if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) { clickedEl = elements[i]; break; } } window.selectionBox = null; if (clickedEl) { if (e.shiftKey) { window.selectedElements = window.selectedElements || []; if (window.selectedElements.includes(clickedEl)) { window.selectedElements = window.selectedElements.filter(x => x !== clickedEl); selectedElement = window.selectedElements[window.selectedElements.length - 1] || null; } else { window.selectedElements.push(clickedEl); selectedElement = clickedEl; if (!clickedEl.locked) { actionState = 'drag'; dragOffsetX = mx - clickedEl.x; dragOffsetY = my - clickedEl.y; } } } else { if (window.selectedElements && window.selectedElements.length > 1 && window.selectedElements.includes(clickedEl)) { selectedElement = clickedEl; if (!clickedEl.locked) { actionState = 'drag'; dragOffsetX = mx - clickedEl.x; dragOffsetY = my - clickedEl.y; } } else { window.selectedElements = [clickedEl]; selectedElement = clickedEl; if (!clickedEl.locked) { actionState = 'drag'; dragOffsetX = mx - clickedEl.x; dragOffsetY = my - clickedEl.y; } } } } else { selectedElement = null; window.selectedElements = []; window.selectionBox = { startX: mx, startY: my, endX: mx, endY: my, active: true }; } updateControlPanel(); drawCanvas(); });
+        canvas.addEventListener('mousemove', e => { if (isPreviewMode) return; const r = canvas.getBoundingClientRect(), mx = (e.clientX - r.left) / currentZoom, my = (e.clientY - r.top) / currentZoom; if (isMagicMode && magicRect.drawing) { magicRect.endX = mx; magicRect.endY = my; drawCanvas(); return; } if (window.selectionBox && window.selectionBox.active) { window.selectionBox.endX = mx; window.selectionBox.endY = my; drawCanvas(); return; } snapGuideX = null; snapGuideY = null; if (actionState === 'drag' && selectedElement) { const dx = mx - dragOffsetX - selectedElement.x, dy = my - dragOffsetY - selectedElement.y; if (window.selectedElements && window.selectedElements.length > 1 && window.selectedElements.includes(selectedElement)) { window.selectedElements.forEach(el => { if (!el.locked) { el.x += dx; el.y += dy; } }); } else { selectedElement.x += dx; selectedElement.y += dy; if (selectedElement.groupId) { elements.forEach(el => { if (el.groupId === selectedElement.groupId && el.id !== selectedElement.id) { el.x += dx; el.y += dy; } }); } if (Math.abs(selectedElement.x - canvas.width / 2) < 8) { const cx = (canvas.width / 2) - selectedElement.x; selectedElement.x += cx; if (selectedElement.groupId) elements.forEach(el => { if (el.groupId === selectedElement.groupId && el.id !== selectedElement.id) el.x += cx; }); snapGuideX = canvas.width / 2; } if (Math.abs(selectedElement.y - canvas.height / 2) < 8) { const cy = (canvas.height / 2) - selectedElement.y; selectedElement.y += cy; if (selectedElement.groupId) elements.forEach(el => { if (el.groupId === selectedElement.groupId && el.id !== selectedElement.id) el.y += cy; }); snapGuideY = canvas.height / 2; } } drawCanvas(); } else if (actionState !== 'none' && selectedElement) { const dx = mx - origX, dy = my - origY; if (selectedElement.type === 'shape' || selectedElement.type === 'image') { let effDx = 0, effDy = 0; if (actionState.includes('e')) effDx = dx; else if (actionState.includes('w')) effDx = -dx; if (actionState.includes('s')) effDy = dy; else if (actionState.includes('n')) effDy = -dy; let nw = origW + effDx, nh = origH + effDy; if (selectedElement.ratioLock) { if (actionState === 's' || actionState === 'n') nw = origW * (nh / origH); else nh = origH * (nw / origW); } if (nw > 10 && nh > 10) { selectedElement.w = nw; selectedElement.h = nh; let dw = nw - origW, dh = nh - origH; if (actionState.includes('e')) selectedElement.x = origX + dw / 2; if (actionState.includes('w')) selectedElement.x = origX - dw / 2; if (actionState.includes('s')) selectedElement.y = origY + dh / 2; if (actionState.includes('n')) selectedElement.y = origY - dh / 2; let cw = document.getElementById('ctrlWidth'); if(cw) { cw.value = Math.round(selectedElement.w); document.getElementById('ctrlHeight').value = Math.round(selectedElement.h); } } } else { let ns = origSize; if (actionState.includes('s') || actionState.includes('e')) ns += Math.max(dx, dy); else if (actionState.includes('n') || actionState.includes('w')) ns -= Math.min(dx, dy); if (ns > 10) { selectedElement.size = Math.round(ns); let sr = ns / origSize; let dw = origW * (sr - 1), dh = origH * (sr - 1); if (selectedElement.align === 'center' || !selectedElement.align) { if (actionState.includes('e')) selectedElement.x = origX + dw / 2; if (actionState.includes('w')) selectedElement.x = origX - dw / 2; } else if (selectedElement.align === 'left') { if (actionState.includes('w')) selectedElement.x = origX - dw; } else if (selectedElement.align === 'right') { if (actionState.includes('e')) selectedElement.x = origX + dw; } if (actionState.includes('s')) selectedElement.y = origY + dh / 2; if (actionState.includes('n')) selectedElement.y = origY - dh / 2; let cs=document.getElementById('ctrlSize'); if(cs) cs.value = selectedElement.size; } } drawCanvas(); } });
+        window.addEventListener('mouseup', () => { if (isMagicMode && magicRect.drawing) { magicRect.drawing = false; magicRect.endX = magicRect.endX || magicRect.startX; magicRect.endY = magicRect.endY || magicRect.startY; openModal('magicTypeModal'); return; } if (window.selectionBox && window.selectionBox.active) { window.selectionBox.active = false; const x1 = Math.min(window.selectionBox.startX, window.selectionBox.endX), y1 = Math.min(window.selectionBox.startY, window.selectionBox.endY), x2 = Math.max(window.selectionBox.startX, window.selectionBox.endX), y2 = Math.max(window.selectionBox.startY, window.selectionBox.endY); window.selectedElements = []; elements.forEach(el => { const b = getBounds(el); if (!(b.x > x2 || b.x + b.w < x1 || b.y > y2 || b.y + b.h < y1)) window.selectedElements.push(el); }); if (window.selectedElements.length > 0) { selectedElement = window.selectedElements[window.selectedElements.length - 1]; } else { selectedElement = null; } window.selectionBox = null; updateControlPanel(); drawCanvas(); return; } if (actionState !== 'none') saveHistory(); actionState = 'none'; snapGuideX = null; snapGuideY = null; drawCanvas(); });
+        window.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; if (e.ctrlKey && e.key === 'z') { undo(); e.preventDefault(); return; } if (e.ctrlKey && (e.key === 'g' || e.key === 'G')) { if (window.selectedElements && window.selectedElements.length > 1) { const gId = genId('g'); window.selectedElements.forEach(el => el.groupId = gId); alert('그룹 묶임'); drawCanvas(); saveHistory(); updateControlPanel(); } else if (selectedElement) { selectedElement.groupId = null; alert('그룹 해제됨'); drawCanvas(); saveHistory(); updateControlPanel(); } e.preventDefault(); return; } if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { if (window.selectedElements && window.selectedElements.length > 1) { window.clipboardElements = JSON.parse(JSON.stringify(window.selectedElements)); alert('다중 복사됨'); } else if (selectedElement) { clipboardElement = JSON.parse(JSON.stringify(selectedElement)); window.clipboardElements = [clipboardElement]; alert('복사됨'); } e.preventDefault(); return; } if (e.ctrlKey && (e.key === 'v' || e.key === 'V')) { if (window.clipboardElements && window.clipboardElements.length > 0) { window.selectedElements = []; window.clipboardElements.forEach(c => { let d = JSON.parse(JSON.stringify(c)); d.id = genId('e'); d.x += 20; d.y += 20; d.groupId = null; if (d.type === 'image' && d.url) { d.imgObj = new Image(); d.imgObj.crossOrigin = "Anonymous"; d.imgObj.onload = drawCanvas; d.imgObj.src = d.url; } elements.push(d); window.selectedElements.push(d); }); selectedElement = window.selectedElements[window.selectedElements.length - 1]; saveHistory(); updateControlPanel(); drawCanvas(); } else if (clipboardElement) { let c = JSON.parse(JSON.stringify(clipboardElement)); c.id = genId('e'); c.x += 20; c.y += 20; c.groupId = null; if (c.type === 'image' && c.url) { c.imgObj = new Image(); c.imgObj.crossOrigin = "Anonymous"; c.imgObj.onload = drawCanvas; c.imgObj.src = c.url; } elements.push(c); selectedElement = c; window.selectedElements = [c]; saveHistory(); updateControlPanel(); drawCanvas(); } e.preventDefault(); return; } if (!selectedElement) return; if (e.key === 'Delete') { if (window.selectedElements && window.selectedElements.length > 1) { elements = elements.filter(el => !window.selectedElements.some(sel => sel.id === el.id)); selectedElement = null; window.selectedElements = []; saveHistory(); updateControlPanel(); drawCanvas(); } else removeElem(); } else if (!selectedElement.locked && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { const m = e.shiftKey ? 10 : 1; let dx = 0, dy = 0; if (e.key === 'ArrowUp') dy -= m; if (e.key === 'ArrowDown') dy += m; if (e.key === 'ArrowLeft') dx -= m; if (e.key === 'ArrowRight') dx += m; if (window.selectedElements && window.selectedElements.length > 1) { window.selectedElements.forEach(el => { if (!el.locked) { el.x += dx; el.y += dy; } }); } else { selectedElement.x += dx; selectedElement.y += dy; if (selectedElement.groupId) elements.forEach(el => { if (el.groupId === selectedElement.groupId && el.id !== selectedElement.id) { el.x += dx; el.y += dy; } }); } drawCanvas(); e.preventDefault(); } });
+        window.addEventListener('keyup', e => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) saveHistory(); });
+
+        function changeLayer(d) { if (!selectedElement) return; const i = elements.findIndex(e => e.id === selectedElement.id); if (d === 1 && i < elements.length - 1) { const t = elements[i]; elements[i] = elements[i + 1]; elements[i + 1] = t; saveHistory(); drawCanvas(); } if (d === -1 && i > 0) { const t = elements[i]; elements[i] = elements[i - 1]; elements[i - 1] = t; saveHistory(); drawCanvas(); } }
+        function updateControlPanel() { const e = selectedElement; document.getElementById('noSelectionMsg').style.display = e ? 'none' : 'block'; document.getElementById('elementControls').style.display = e ? 'block' : 'none'; if (!e) return; isUpdatingPanel = true; document.getElementById('lockStatus').innerText = e.locked ? '(🔒 잠김)' : (e.groupId ? '(🔗 그룹묶임)' : ''); document.getElementById('btnLock').innerText = e.locked ? '🔓 잠금해제' : '🔒 잠금'; document.getElementById('ctrlColor').value = e.color || '#000'; document.getElementById('ctrlOpacity').value = e.opacity || 1; document.getElementById('ctrlPlaceholderGroup').style.display = e.type === 'text' ? 'block' : 'none'; document.getElementById('ctrlTextGroup').style.display = e.type === 'text' ? 'block' : 'none'; document.getElementById('ctrlSizeGroup').style.display = e.type === 'text' ? 'block' : 'none'; document.getElementById('ctrlLetterSpaceGroup').style.display = e.type === 'text' ? 'block' : 'none'; document.getElementById('ctrlScaleXGroup').style.display = e.type === 'text' ? 'block' : 'none'; document.getElementById('ctrlScaleYGroup').style.display = e.type === 'text' ? 'block' : 'none'; document.getElementById('ctrlLineHeightGroup').style.display = e.type === 'text' ? 'block' : 'none'; document.getElementById('ctrlWeightGroup').style.display = e.type === 'text' ? 'block' : 'none'; document.getElementById('ctrlStrokeGroup').style.display = (e.type === 'text' || e.type === 'shape') ? 'block' : 'none'; document.getElementById('ctrlShadowGroup').style.display = e.type === 'text' ? 'block' : 'none'; document.getElementById('ctrlBorderRadiusGroup').style.display = (e.type === 'shape' && e.shapeType === 'round') ? 'block' : 'none'; document.getElementById('ctrlWidthGroup').style.display = (e.type === 'shape' || e.type === 'image' || e.type === 'text') ? 'block' : 'none'; document.getElementById('ctrlHeightGroup').style.display = (e.type === 'shape' || e.type === 'image') ? 'block' : 'none'; document.getElementById('ctrlFilterGroup').style.display = e.type === 'image' ? 'block' : 'none'; document.getElementById('ctrlRatioLockGroup').style.display = (e.type === 'shape' || e.type === 'image') ? 'block' : 'none'; document.getElementById('ctrlFrameGroup').style.display = e.type === 'image' ? 'block' : 'none'; document.getElementById('btnCropElem').style.display = e.type === 'image' ? 'inline-block' : 'none'; if (e.type === 'text') { if (!e.w) { ctx.font = `${e.weight || 400} ${e.size}px ${FONT}`; const tStr = e.text != null ? String(e.text) : ''; const ls = tStr.split('\n'); let mw = 0; ls.forEach(l => { const tw = ctx.measureText(l).width; if (tw > mw) mw = tw; }); e.w = Math.max(Math.round(mw), 50); } document.getElementById('ctrlPlaceholder').value = e.placeholder || ''; document.getElementById('ctrlText').value = e.text || ''; document.getElementById('ctrlSize').value = e.size; document.getElementById('ctrlLetterSpace').value = e.letterSpacing || 0; document.getElementById('ctrlScaleX').value = Math.round((e.scaleX || 1) * 100); document.getElementById('ctrlScaleY').value = Math.round((e.scaleY || 1) * 100); document.getElementById('ctrlLineHeight').value = e.lineHeight || 120; document.getElementById('ctrlWeightNum').value = e.weight || 700; syncWeight('num'); document.getElementById('ctrlAlign').value = e.align || 'center'; document.getElementById('ctrlStrokeW').value = e.strokeW || 0; document.getElementById('ctrlStrokeC').value = e.strokeC || '#fff'; document.getElementById('ctrlShadow').checked = e.shadow || false; document.getElementById('ctrlAutoScale').checked = e.autoScale !== undefined ? e.autoScale : true; document.getElementById('ctrlWidth').value = Math.round(e.w || 250); } else if (e.type === 'shape') { document.getElementById('ctrlBorderRadius').value = e.borderRadius !== undefined ? e.borderRadius : 15; document.getElementById('ctrlWidth').value = Math.round(e.w); document.getElementById('ctrlHeight').value = Math.round(e.h); document.getElementById('ctrlStrokeW').value = e.strokeW || 0; document.getElementById('ctrlStrokeC').value = e.strokeC || '#000'; document.getElementById('ctrlRatioLock').checked = e.ratioLock || false; } else if (e.type === 'image') { document.getElementById('ctrlWidth').value = Math.round(e.w); document.getElementById('ctrlHeight').value = Math.round(e.h); document.getElementById('ctrlFrame').value = e.frame || 'none'; document.getElementById('ctrlRatioLock').checked = e.ratioLock || false; document.getElementById('ctrlBrightness').value = e.brightness || 100; document.getElementById('ctrlContrast').value = e.contrast || 100; } setTimeout(() => { isUpdatingPanel = false; }, 50); }
+        function updateElem() { if (isUpdatingPanel || !selectedElement) return; const e = selectedElement; e.color = document.getElementById('ctrlColor').value; e.opacity = parseFloat(document.getElementById('ctrlOpacity').value); if (e.type === 'text') { e.placeholder = document.getElementById('ctrlPlaceholder').value; e.text = document.getElementById('ctrlText').value; e.size = parseInt(document.getElementById('ctrlSize').value); e.letterSpacing = parseInt(document.getElementById('ctrlLetterSpace').value); e.scaleX = (parseInt(document.getElementById('ctrlScaleX').value) || 100) / 100; e.scaleY = (parseInt(document.getElementById('ctrlScaleY').value) || 100) / 100; e.lineHeight = parseInt(document.getElementById('ctrlLineHeight').value); e.weight = document.getElementById('ctrlWeightNum').value; e.align = document.getElementById('ctrlAlign').value; e.strokeW = parseInt(document.getElementById('ctrlStrokeW').value) || 0; e.strokeC = document.getElementById('ctrlStrokeC').value; e.shadow = document.getElementById('ctrlShadow').checked; e.autoScale = document.getElementById('ctrlAutoScale').checked; e.w = parseInt(document.getElementById('ctrlWidth').value) || 0; } else if (e.type === 'shape') { e.borderRadius = parseInt(document.getElementById('ctrlBorderRadius').value) || 0; e.w = parseInt(document.getElementById('ctrlWidth').value); e.h = parseInt(document.getElementById('ctrlHeight').value); e.strokeW = parseInt(document.getElementById('ctrlStrokeW').value) || 0; e.strokeC = document.getElementById('ctrlStrokeC').value; e.ratioLock = document.getElementById('ctrlRatioLock').checked; } else if (e.type === 'image') { e.w = parseInt(document.getElementById('ctrlWidth').value); e.h = parseInt(document.getElementById('ctrlHeight').value); e.frame = document.getElementById('ctrlFrame').value; e.ratioLock = document.getElementById('ctrlRatioLock').checked; e.brightness = parseInt(document.getElementById('ctrlBrightness').value); e.contrast = parseInt(document.getElementById('ctrlContrast').value); } drawCanvas(); saveHistory(); }
+        function removeElem() { if (!selectedElement) return; if (window.selectedElements && window.selectedElements.length > 1) { elements = elements.filter(el => !window.selectedElements.some(sel => sel.id === el.id)); selectedElement = null; window.selectedElements = []; } else { elements = elements.filter(e => e.id !== selectedElement.id); selectedElement = null; window.selectedElements = []; } saveHistory(); updateControlPanel(); drawCanvas(); }
+
+        async function saveTemplate(a) { const t = document.getElementById('tplTitle').value.trim(); if (!t) return alert("이름 입력!"); const p = selectedElement; selectedElement = null; drawCanvas(); const c = document.createElement('canvas'); c.width = 300; c.height = (canvas.height / canvas.width) * 300; c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); selectedElement = p; drawCanvas(); let zd = [], sd = []; elements.forEach(e => { let cp = { ...e }; delete cp.imgObj; if (e.type === 'text') zd.push(cp); else sd.push(cp); }); const dt = { id: currentTemplateId, title: t, bg_image_url: bgImageUrl, thumbnail_base64: c.toDataURL('image/jpeg', 0.6), zone_data: zd, shape_data: sd, canvas_width: canvas.width, canvas_height: canvas.height, is_active: a }; const rs = await fetch('/api/admin/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dt) }), r = await rs.json(); if (r.success) { markSaved(); alert(a ? '배포 완료!' : '임시저장 완료!'); if (r.id) currentTemplateId = r.id; loadTemplates(); } else alert('오류: ' + r.error); }
+        async function deleteTemplate() { if (!currentTemplateId || !confirm('정말 삭제?')) return; const rs = await fetch(`/api/admin/templates/${currentTemplateId}`, { method: 'DELETE' }); if ((await rs.json()).success) { alert('삭제됨'); createNewTemplate(); } }
+        window.addEventListener('resize', autoFitCanvas); window.onload = () => { loadTemplates(); drawCanvas(); };
+
+        const catMsgs = ["[ID] 화이팅!!", "[ID] 힘내^^V", "최고관리자 [ID]님 멋지다냥!", "오늘도 칼퇴하자냥!", "완벽한 디자인이다냥~", "난 황용식이다냥!"];
+        function showCatMsg(force = false) {
+            const bubble = document.getElementById('catMsg');
+            if (!bubble || (bubble.classList.contains('show') && !force)) return;
+            const uid = localStorage.getItem('v8_user_id') || '관리자';
+            const msg = catMsgs[Math.floor(Math.random() * catMsgs.length)].replace(/\[ID\]/g, uid);
+            bubble.innerText = msg;
+            bubble.classList.add('show');
+            setTimeout(() => bubble.classList.remove('show'), 3500);
+        }
+        setInterval(() => showCatMsg(), 12000);
+        setTimeout(() => showCatMsg(true), 2000);
+
+        function initCatDrag() {
+            const mover = document.getElementById('catMover');
+            if (!mover) return;
+            let isDragging = false, hasMoved = false, startX, startY, initLeft, initTop;
+            mover.onmousedown = function (e) {
+                e.preventDefault(); isDragging = true; hasMoved = false; startX = e.clientX; startY = e.clientY;
+                const rect = mover.getBoundingClientRect(); initLeft = rect.left; initTop = rect.top;
+                document.addEventListener('mousemove', dragMouseMove); document.addEventListener('mouseup', dragMouseUp);
+            };
+            function dragMouseMove(e) {
+                if (!isDragging) return; const dx = e.clientX - startX, dy = e.clientY - startY;
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved = true;
+                if (hasMoved) { mover.style.right = 'auto'; mover.style.bottom = 'auto'; mover.style.left = (initLeft + dx) + 'px'; mover.style.top = (initTop + dy) + 'px'; }
+            }
+            function dragMouseUp() {
+                isDragging = false; document.removeEventListener('mousemove', dragMouseMove); document.removeEventListener('mouseup', dragMouseUp);
+                if (!hasMoved) showCatMsg(true);
+            }
+        }
+        setTimeout(initCatDrag, 500);
+    </script>
+
+    <div id="catMover">
+        <div class="cat-container">
+            <div class="cat-speech-bubble" id="catMsg"></div>
+            <div class="wandering-cat" title="야옹! 이동시켜봐라냥!"></div>
+        </div>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>통영.거제교차로 기획광고 편집기 V1.6</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --secondary: #6366f1;
+    --secondary-hover: #4f46e5;
+    --success: #10b981;
+    --success-hover: #059669;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --neutral: #64748b;
+    --neutral-hover: #475569;
+    --header-bg: #ffffff;
+    --panel-bg: #fafbfc;
+    --border: #e2e8f0;
+}
+
+body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+::-webkit-scrollbar{width:8px;height:8px;}::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px;}
+.app-header{background:var(--header-bg);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:3px solid #ff69b4;flex-shrink:0;}
+.creator-info{font-size:26px;color:#8e44ad;font-weight:bold;}
+.main-title{font-size:24px;font-weight:900;color:#2c3e50;position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;}
+.version-badge{background:#ff4757;color:white;padding:4px 10px;border-radius:20px;font-size:14px;}
+.toggle-btn{background:#34495e;color:white;padding:8px 15px;border-radius:20px;font-weight:bold;cursor:pointer;border:none;transition:0.3s;}
+.toggle-btn.unlocked{background:#e74c3c;box-shadow:0 0 10px rgba(231,76,60,0.5);}
+.workspace{display:flex;flex:1;overflow:hidden;position:relative;}
+.toggle-panel-btn{position:absolute;top:50%;transform:translateY(-50%);background:#3498db;color:white;border:none;width:24px;height:50px;cursor:pointer;z-index:100;font-weight:bold;border-radius:0 8px 8px 0;display:flex;align-items:center;justify-content:center;}
+.toggle-panel-btn.left{left:280px;transition:0.3s;} .toggle-panel-btn.left.collapsed{left:0;}
+.panel{background:#fff;box-shadow:0 0 15px rgba(0,0,0,0.05);display:flex;flex-direction:column;}
+.history-panel{width:280px;padding:15px;overflow-y:auto;border-right:1px solid #ddd;transition:0.3s;flex-shrink:0;background:#fdfdfe;}
+.history-panel.collapsed{margin-left:-280px;}
+.controls-panel{width:340px;padding:20px;overflow-y:auto;border-right:1px solid #ddd;flex-shrink:0;background:#fafbfc;transition:0.3s;}
+.controls-panel.preview-mode{margin-right:-340px;}
+.preview-panel{flex:1;display:flex;flex-direction:column;background:#ecf0f1;min-width:0;}
+.basic-info{background:#fff3e0;padding:15px;border-radius:8px;margin-bottom:20px;border:1px solid #ffe0b2;position:relative;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;} .full{grid-column:1/-1;}
+.form-group label{display:flex;justify-content:space-between;font-size:12px;font-weight:bold;color:#555;margin-bottom:4px;}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;font-family:inherit;}
+.autocomplete-list{position:absolute;top:70px;left:15px;right:15px;background:white;border:1px solid #ccc;border-radius:4px;max-height:150px;overflow-y:auto;z-index:100;box-shadow:0 4px 6px rgba(0,0,0,0.1);display:none;}
+.autocomplete-item{padding:8px;cursor:pointer;font-size:12px;border-bottom:1px solid #eee;} .autocomplete-item:hover{background:#f1f8ff;}
+.template-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;max-height:60vh;overflow-y:auto;padding:10px;}
+.template-card{background:#fff;border:2px solid #ddd;border-radius:8px;cursor:pointer;overflow:hidden;transition:0.2s;text-align:center;}
+.template-card:hover{border-color:#ff69b4;transform:translateY(-3px);box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+.template-card img{width:100%;height:120px;object-fit:contain;background:#f9f9f9;border-bottom:1px solid #eee;}
+.template-card span{display:block;padding:10px;font-size:13px;font-weight:bold;color:#333;}
+#historyList{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-bottom:20px;}
+.history-card{background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;overflow:hidden;position:relative;transition:0.2s;}
+.history-card:hover{border-color:#3498db;}
+.history-card img{width:100%;height:80px;object-fit:contain;background:#eee;}
+.history-info{padding:6px;font-size:11px;text-align:center;}
+.history-info strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333;}
+.history-info span{color:#999;font-size:10px;}
+.btn-quick-clone{position:absolute;top:5px;right:5px;background:rgba(46,204,113,0.9);color:white;border:none;border-radius:4px;font-size:10px;padding:4px 6px;cursor:pointer;display:none;font-weight:bold;}
+.history-card:hover .btn-quick-clone{display:block;} .btn-quick-clone:hover{background:#27ae60;}
+.load-more-btn{grid-column:1/-1;padding:8px;background:#eee;border:none;border-radius:4px;cursor:pointer;font-size:12px;color:#555;}
+.zone-input{background:#fff;border:1px solid #e1e5eb;padding:12px;border-radius:8px;border-left:4px solid #3498db;margin-bottom:10px;}
+.zone-input label{font-size:12px;font-weight:bold;display:block;margin-bottom:5px;color:#2c3e50;}
+.top-toolbar{height:50px;background:#fff;border-bottom:1px solid #ddd;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.zoom-controls{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:bold;}
+.btn{padding:12px 20px;border:none;border-radius:6px;font-weight:900;color:white;cursor:pointer;font-size:14px;min-width:100px;transition:0.2s;}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+.btn:active{transform:translateY(0);}
+
+.btn-full{width:100%;padding:10px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;margin-bottom:8px;color:white;transition:0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.btn-full:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+.btn-full:active{transform:translateY(0);}
+
+.btn-primary{background:var(--primary);} .btn-primary:hover{background:var(--primary-hover);}
+.btn-secondary{background:var(--secondary);} .btn-secondary:hover{background:var(--secondary-hover);}
+.btn-success{background:var(--success);} .btn-success:hover{background:var(--success-hover);}
+.btn-danger{background:var(--danger);} .btn-danger:hover{background:var(--danger-hover);}
+.btn-neutral{background:var(--neutral);} .btn-neutral:hover{background:var(--neutral-hover);}
+
+.btn-tool {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: #475569;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+.btn-tool:hover { background: #f8fafc; color: var(--primary); border-color: var(--primary); }
+#loadingModal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:3000;align-items:center;justify-content:center;color:white;font-size:20px;font-weight:bold;}
+#advControls{display:none;background:#fff;border:2px solid #e74c3c;border-radius:8px;padding:15px;}
+#advControls h4{margin:0 0 15px 0;color:#e74c3c;}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;}
+.modal-content{background:#fff;border:2px solid #3498db;border-radius:8px;padding:20px;box-shadow:0 10px 50px rgba(0,0,0,0.5);width:380px;}
+.tab-header{display:flex;gap:5px;margin-top:15px;border-bottom:1px solid #ccc;padding-bottom:5px;}
+.tab-btn{background:#f4f7fa;border:1px solid #ccc;color:#555;padding:6px 12px;border-radius:4px 4px 0 0;cursor:pointer;font-weight:bold;}
+.tab-btn.active{background:#3498db;border-color:#3498db;color:white;}
+.char-grid{display:none;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:10px;max-height:200px;overflow-y:auto;}
+.char-grid.active{display:grid;}
+.char-grid button{background:#fdfdfe;color:#333;border:1px solid #ccc;border-radius:4px;font-size:16px;padding:8px 0;cursor:pointer;transition:0.1s;}
+.char-grid button:hover{background:#3498db;color:white;border-color:#3498db;}
+  #catMover { position: fixed; bottom: 80px; right: 80px; z-index: 5000; cursor: move; }
+  .cat-container {
+    position: relative;
+    animation: floatBig 7s ease-in-out infinite;
+  }
+  .wandering-cat {
+    width: 150px; height: 150px;
+    background: url('/uploads/cat_bg.jpg') center/cover;
+    border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    border: 4px solid rgba(255,255,255,0.9);
+    animation: morph 10s ease-in-out infinite; opacity: 0.95;
+    transition: transform 0.3s;
+  }
+  .wandering-cat:hover { transform: scale(1.1); }
+  
+  .cat-speech-bubble {
+    position: absolute; bottom: 150px; right: 50px;
+    background: white; border-radius: 20px; padding: 12px 20px;
+    font-size: 15px; font-weight: 900; color: #ff6b6b; z-index: 100;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    opacity: 0; transform: translateY(20px) scale(0.8);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    white-space: nowrap; pointer-events: none; border: 3px solid #ff6b6b;
+  }
+  .cat-speech-bubble::after {
+    content: ''; position: absolute; bottom: -12px; right: 40px;
+    border-width: 12px 12px 0 0; border-style: solid;
+    border-color: #ff6b6b transparent transparent transparent;
+  }
+  .cat-speech-bubble.show { opacity: 1; transform: translateY(0) scale(1); }
+
+  @keyframes floatBig {
+    0% { transform: translateY(0) translateX(0) rotate(0deg); }
+    33% { transform: translateY(-30px) translateX(-15px) rotate(8deg); }
+    66% { transform: translateY(-10px) translateX(15px) rotate(-5deg); }
+    100% { transform: translateY(0) translateX(0) rotate(0deg); }
+  }
+  @keyframes morph {
+    0% { border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%; }
+    50% { border-radius: 54% 46% 38% 62% / 49% 54% 46% 51%; }
+    100% { border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%; }
+  }
+  .canvas-wrapper {
+    flex: 1; padding: 20px;
+    display: flex; justify-content: center; align-items: center;
+    background: #ecf0f1; position: relative;
+    overflow: auto; /* v2.1: 스크롤바 추가 */
+  }
+</style>
+</head>
+<body>
+<div class="app-header">
+    <div class="creator-info">만든이: 통영.거제교차로</div>
+    <div class="main-title"><img src="/uploads/logo.png" style="height:32px; object-fit:contain;"> 기획광고 편집기 <span class="version-badge">V1.6</span></div>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <button id="btnAdminSwitch" class="btn-tool btn-neutral" style="display:none;" onclick="saveDraftAndSwitch('/admin.html')">⚙️ 관리자 화면</button>
+        <button class="btn-tool btn-neutral" onclick="openMemberInfo()">👤 내정보</button>
+        <button id="modeToggle" class="toggle-btn" onclick="toggleEditMode()">🔒 고급 편집 잠금</button>
+        <button class="btn-tool btn-neutral" onclick="localStorage.removeItem('v8_user_role');localStorage.removeItem('v8_user_id');location.href='/';">🚪 로그아웃</button>
+    </div>
+</div>
+<div id="loadingModal">⏳ 고화질 파일 생성 중...</div>
+
+<div class="modal-overlay" id="charModalOverlay"><div class="modal-content"><div style="display:flex;justify-content:space-between;"><strong style="color:var(--primary);font-size:18px;">✨ 스티커 & 기호</strong><button class="btn-tool" onclick="closeModal('charModalOverlay')">닫기</button></div><p style="font-size:12px;color:#777;">※ <strong>더블클릭</strong> 시 커서 위치 삽입</p>
+    <div class="tab-header"><button class="tab-btn active" onclick="switchCharTab('stickers')">🚀 스티커</button><button class="tab-btn" onclick="switchCharTab('symbols')">기호</button><button class="tab-btn" onclick="switchCharTab('units')">단위</button><button class="tab-btn" onclick="switchCharTab('brackets')">괄호</button></div>
+    <div class="char-grid active" id="tab_stickers" style="grid-template-columns:1fr 1fr;">
+        <button class="btn-full btn-danger" style="margin:0;" onclick="addSticker('urgent')">🚨 급매 뱃지</button>
+        <button class="btn-full btn-secondary" style="margin:0;" onclick="addSticker('recommend')">⭐ 추천 뱃지</button>
+        <button class="btn-full btn-neutral" style="margin:0;" onclick="addSticker('table_realestate')">📊 부동산 표</button>
+        <button class="btn-full btn-neutral" style="margin:0;" onclick="addSticker('table_job')">📊 구인 표</button>
+    </div>
+    <div class="char-grid" id="tab_symbols"></div><div class="char-grid" id="tab_units"></div><div class="char-grid" id="tab_brackets"></div>
+</div></div>
+
+<div class="modal-overlay" id="templateModalOverlay"><div class="modal-content" style="width:800px;background:#fdfdfe;"><div style="display:flex;justify-content:space-between;margin-bottom:15px;"><strong style="color:var(--primary);font-size:20px;">🎨 갤러리</strong><button class="btn-tool" onclick="closeModal('templateModalOverlay')">닫기</button></div><div class="template-grid" id="modalTemplateGrid"></div></div></div>
+
+<div class="modal-overlay" id="memberInfoModal">
+    <div class="modal-content" style="width:320px; border-left:5px solid #3498db;">
+        <h3 style="margin-top:0;">👤 내 정보 수정</h3>
+        <div class="form-group" style="margin-bottom:10px;"><label>아이디</label><input type="text" id="myId" readonly style="background:#eee;"></div>
+        <div class="form-group" style="margin-bottom:10px;"><label>이름</label><input type="text" id="myName"></div>
+        <div class="form-group" style="margin-bottom:10px;"><label>연락처</label><input type="text" id="myContact"></div>
+        <div class="form-group" style="margin-bottom:10px;"><label>현재 비밀번호</label><input type="password" id="myOldPassword" placeholder="변경하려면 입력"></div>
+        <div class="form-group" style="margin-bottom:15px;"><label>새 비밀번호</label><input type="password" id="myPassword" placeholder="미입력시 유지"></div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-full btn-primary" style="margin:0;" onclick="saveMyInfo()">저장하기</button>
+            <button class="btn-full btn-neutral" style="margin:0;" onclick="closeModal('memberInfoModal')">취소</button>
+        </div>
+    </div>
+</div>
+
+<div class="workspace">
+    <div class="panel history-panel" id="historyPanel">
+        <h3 style="margin-top:0;">📂 작업 내역</h3>
+        <input type="date" id="searchDate" style="width:100%;margin-bottom:5px;padding:8px;border:1px solid #ccc;border-radius:4px;" onchange="searchHistory(1)">
+        <input type="text" id="searchInput" placeholder="상호 검색..." style="width:100%;margin-bottom:15px;padding:8px;border:1px solid #ccc;border-radius:4px;" onkeyup="if(event.key==='Enter')searchHistory(1)">
+        <div id="historyList"></div>
+    </div>
+    <button class="toggle-panel-btn left" id="btnToggleLeft" onclick="toggleHistoryPanel()">◀</button>
+
+    <div class="panel controls-panel" id="controlsPanel">
+        <div class="basic-info">
+            <h4 style="margin:0 0 10px 0;color:#d35400;">🏢 고객 정보</h4>
+            <div class="form-grid">
+                <div class="form-group full"><label>상호명</label><input type="text" id="info_company" oninput="markUnsaved();triggerAutoSave();searchCustomerAutoFill();" autocomplete="off"></div>
+                <div class="form-group"><label>성명</label><input type="text" id="info_name" oninput="markUnsaved();triggerAutoSave();"></div>
+                <div class="form-group"><label>연락처</label><input type="text" id="info_contact" oninput="markUnsaved();triggerAutoSave();"></div>
+                <div class="form-group full"><label>비고</label><input type="text" id="info_note" oninput="markUnsaved();triggerAutoSave();"></div>
+            </div>
+            <div id="customerAutoList" class="autocomplete-list"></div>
+        </div>
+        <div id="basicModeArea">
+            <button class="btn-full btn-primary" style="font-size:16px;padding:15px;margin-bottom:20px;" onclick="openModal('templateModalOverlay')">🎨 템플릿 열기</button>
+            <h4 style="margin:15px 0 10px 0;">✍️ 내용 입력</h4>
+            <div id="dynamicZones"><p style="font-size:12px;color:#999;text-align:center;">템플릿을 선택하세요.</p></div>
+        </div>
+        <div id="advControls">
+            <h4>🛠 요소 도구</h4>
+            <div class="grid-2" style="gap:5px;margin-bottom:15px;">
+                <button class="btn-full btn-secondary" style="margin:0;" onclick="addElement('text')">🔤 텍스트</button>
+                <select id="shapeTypeSel" class="form-control" style="height:36px;padding:4px;" onchange="if(this.value){addElement('shape',this.value);this.value='';}">
+                    <option value="">🟩 도형</option>
+                    <option value="rect">사각</option>
+                    <option value="round">둥근사각</option>
+                    <option value="circle">원형</option>
+                    <option value="triangle">삼각</option>
+                    <option value="line">직선</option>
+                </select>
+                <button class="btn-full btn-secondary" style="margin:0;" onclick="openModal('charModalOverlay')">⭐ 스티커</button>
+                <div>
+                    <input type="file" id="customImgInput" style="display:none" accept="image/*" onchange="uploadImage(event)">
+                    <button class="btn-full btn-secondary" style="margin:0;" onclick="document.getElementById('customImgInput').click()">🖼 사진</button>
+                </div>
+                <button class="btn-full btn-neutral" style="margin:0;" onclick="openCropModal('canvas')">✂️ 전체 크롭</button>
+                <button class="btn-full btn-neutral" style="margin:0;" onclick="addQRCode()">📱 QR코드</button>
+            </div>
+            <div id="advNoSelect" style="font-size:12px;color:#999;text-align:center;padding:20px;background:#f9f9f9;border:1px dashed #ccc;">캔버스 요소 클릭</div>
+            <div id="advSettings" style="display:none;">
+                <div class="grid-3" style="margin-bottom:10px;">
+                    <button class="btn-tool" onclick="changeLayer(1)">▲ 앞으로</button>
+                    <button class="btn-tool" onclick="changeLayer(-1)">▼ 뒤로</button>
+                    <button class="btn-tool" id="btnLock" onclick="toggleLock()">🔒 잠금</button>
+                    <button class="btn-tool" style="display:none;" id="btnCropElem" onclick="openCropModal('element')">✂️ 자르기</button>
+                </div>
+                <button class="btn-full btn-secondary" style="padding:6px;margin-bottom:10px;" onclick="duplicateElement()">👯 복제 (Alt+D)</button>
+                <div class="form-group" id="advTextGroup"><label style="display:flex; justify-content:space-between; align-items:center;"><span style="display:flex; gap:8px; align-items:center;">내용 <label style="font-size:11px; color:#e67e22; cursor:pointer; display:flex; align-items:center; margin:0;"><input type="checkbox" id="advAutoScale" onchange="updateAdv()" style="margin:0 4px 0 0;">자동 맞춤</label></span><select id="advAlign" class="form-control" style="width:80px;padding:2px;height:24px;" onchange="updateAdv()"><option value="left">좌측</option><option value="center">중앙</option><option value="right">우측</option></select></label><textarea id="advText" class="form-control" rows="2" style="margin-top:4px;" oninput="updateAdv()"></textarea></div>
+                <div class="form-grid">
+                    <div class="form-group"><label>색상</label><input type="color" id="advColor" class="form-control" style="padding:0;height:34px;" oninput="updateAdv()"></div><div class="form-group"><label>투명도</label><input type="range" min="0.1" max="1" step="0.1" id="advOpacity" style="width:100%;margin-top:8px;" oninput="updateAdv()"></div>
+                    <div class="form-group" id="advSizeGroup"><label>크기</label><input type="number" id="advSize" class="form-control" oninput="updateAdv()"></div><div class="form-group" id="advLetterSpaceGroup"><label>자간</label><input type="number" id="advLetterSpace" class="form-control" oninput="updateAdv()"></div>
+                    <div class="form-group" id="advScaleXGroup"><label>가로스케일(%)</label><input type="number" id="advScaleX" class="form-control" step="1" oninput="updateAdv()"></div><div class="form-group" id="advScaleYGroup"><label>세로스케일(%)</label><input type="number" id="advScaleY" class="form-control" step="1" oninput="updateAdv()"></div>
+                    <div class="form-group" id="advLineHeightGroup"><label>행간(%)</label><input type="number" id="advLineHeight" class="form-control" oninput="updateAdv()"></div><div class="form-group" id="advWeightGroup"><label>굵기</label><div style="display:flex;gap:2px;"><select id="advWeightSel" class="form-control" style="width:50px;padding:2px;" onchange="syncWeight('sel')"><option value="300">얇</option><option value="500">보</option><option value="700">굵</option><option value="900">최</option></select><input type="number" id="advWeightNum" class="form-control" step="10" min="100" max="900" style="padding:2px;" oninput="syncWeight('num')"></div></div>
+                    <div class="form-group" id="advStrokeGroup"><label>테두리(외곽선)</label><div style="display:flex;gap:2px;"><input type="number" id="advStrokeW" class="form-control" min="0" step="1" oninput="updateAdv()"><input type="color" id="advStrokeC" class="form-control" style="padding:0;height:34px;" oninput="updateAdv()"></div></div>
+                    <div class="form-group" id="advShadowGroup"><label style="margin-top:8px;"><input type="checkbox" id="advShadow" onchange="updateAdv()"> 그림자</label></div>
+
+                    <div class="form-group" id="advBorderRadiusGroup" style="display:none;"><label>둥글기값</label><input type="number" id="advBorderRadius" class="form-control" oninput="updateAdv()"></div>
+                    <div class="form-group" id="advWidthGroup"><label>가로</label><input type="number" id="advWidth" class="form-control" oninput="updateAdv()"></div><div class="form-group" id="advHeightGroup"><label>세로</label><input type="number" id="advHeight" class="form-control" oninput="updateAdv()"></div>
+                    <div class="form-group" id="advFilterGroup" style="grid-column:1/-1;display:none;"><label>사진 보정</label><div style="display:flex;gap:5px;">☀️<input type="range" id="advBrightness" min="50" max="150" value="100" style="width:100%;" oninput="updateAdv()">🌗<input type="range" id="advContrast" min="50" max="150" value="100" style="width:100%;" oninput="updateAdv()"></div></div>
+                    <div class="form-group" id="advRatioLockGroup" style="grid-column:1/-1;display:none;"><label><input type="checkbox" id="advRatioLock" onchange="updateAdv()"> 🔗 비율 고정</label></div><div class="form-group" id="advFrameGroup" style="grid-column:1/-1;"><label>프레임</label><select id="advFrame" class="form-control" onchange="updateAdv()"><option value="none">원본</option><option value="circle">원형</option><option value="rounded">둥근사각</option><option value="polygon">육각</option><option value="star">별모양</option></select></div>
+                </div>
+                <button class="btn-full btn-danger" style="width:100%;border-radius:4px;font-weight:bold;margin-top:10px;" onclick="deleteAdv()">🗑 요소 삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel preview-panel">
+        <div class="top-toolbar">
+            <div class="zoom-controls">
+                <button class="btn-tool" style="background:var(--secondary);color:white;" onclick="togglePreviewMode()" id="btnPreviewMode">👁️ 미리보기</button>
+                <button class="btn-tool" onclick="autoFitCanvas()">🖥 맞춤</button>
+                <span>🔍</span><button class="btn-tool" onclick="zoomStep(-0.1)">➖</button><input type="range" id="zoomSlider" min="0.2" max="3" step="0.1" value="1" oninput="updateZoom()" style="width:70px;"><button class="btn-tool" onclick="zoomStep(0.1)">➕</button><span id="zoomValue" style="width:40px;">100%</span>
+            </div>
+            <div class="zoom-controls"><span id="autoSaveText" style="color:#2ecc71;font-weight:normal;margin-right:10px;"></span><button class="btn-tool" onclick="undo()">↩️ 취소(Z)</button><button class="btn-tool" onclick="redo()">↪️ 복구</button></div>
+        </div>
+        <div class="canvas-wrapper" id="canvasContainer"><div id="canvasBox"><canvas id="canvas"></canvas></div></div>
+        <div class="action-buttons">
+            <button class="btn btn-neutral" onclick="newWork()">✨ 새 작업</button>
+            <button class="btn btn-neutral" style="display:none;" id="btnDuplicateAd" onclick="duplicateWork()">👯 복제</button>
+            <button class="btn btn-danger" style="display:none;" id="btnDeleteAd" onclick="deleteWork()">🗑️ 삭제</button>
+            <button class="btn btn-primary" onclick="saveToDB()">💾 내역 저장</button>
+            <button class="btn btn-success" onclick="downloadFile('jpg')">📱 이미지</button>
+            <button class="btn btn-success" onclick="downloadFile('pdf')">📄 PDF</button>
+        </div>
+    </div>
+</div>
+<script>
+if(!localStorage.getItem('v8_user_id')) {
+    alert('⛔ 로그인이 필요합니다. 로그인 화면으로 이동합니다.');
+    window.location.href = '/';
+}
+window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('v8_user_role') === 'admin') {
+        const swBtn = document.getElementById('btnAdminSwitch');
+        if (swBtn) swBtn.style.display = 'inline-block';
+    }
+});
+
+// 난수 ID 생성
+function genId(p){return p+'_'+Date.now()+'_'+Math.floor(Math.random()*1000);}
+
+// 🚀 1. 가장 강력한 2중 안전 파서
+function safeParse(d){if(!d)return [];if(Array.isArray(d))return d;if(typeof d==='string'){try{let p=JSON.parse(d);if(typeof p==='string')p=JSON.parse(p);return Array.isArray(p)?p:[];}catch(e){return [];}}return [];}
+// 🚀 2. HTML 충돌 방지기
+function sanitize(s){return s!=null?String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
+
+function openModal(id){document.getElementById(id).style.display='flex';}
+function closeModal(id){document.getElementById(id).style.display='none';}
+
+const charsData={symbols:['▶','▷','※','★','☆','■','□','●','○','◆','◇','☎','☏','✔','✅','☞','☜','♥','♡','♣','♠','❌','⭕','❗','❓','💡','🔥','✨','🎉','🎁','👍','👎','👏','👐','🙌','🎯','📌','📍','📢','🔔','🎵'],units:['㎡','㎥','℃','℉','％','‰','㎜','㎝','㎞','㎖','ℓ','㎈','㎉','㎍','㎎','㎏','㎐','㎒','㎓','━','┃','┏','┓','┛','┗','┣','┳','┫','┻','╋','╂','₩','＄','€','£','¥'],brackets:['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','ⓐ','ⓑ','ⓒ','ⓓ','ⓔ','ⓕ','ⓖ','ⓗ','ⓘ','ⓙ','㉠','㉡','㉢','㉣','㉤','㉥','㉦','㉧','㉨','㉩','【','】','〖','〗','『','』','《','》','〔','〕','㈜','㈔','㈇','㈎','㈏','㈐','㈑','㈒']};
+function renderChars(){Object.keys(charsData).forEach(k=>{const c=document.getElementById('tab_'+k);charsData[k].forEach(ch=>{const b=document.createElement('button');b.innerText=ch;b.ondblclick=()=>insertChar(ch);c.appendChild(b);});});}
+function switchCharTab(id){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.char-grid').forEach(g=>g.classList.remove('active'));event.target.classList.add('active');document.getElementById('tab_'+id).classList.add('active');}
+function insertChar(c){const t=isEditMode?document.getElementById('advText'):(selectedElement?document.getElementById(`z_${selectedElement.id}`):null);if(selectedElement&&selectedElement.type==='text'&&t&&document.activeElement===t){const s=t.selectionStart,e=t.selectionEnd,v=t.value;t.value=v.substring(0,s)+c+v.substring(e);t.selectionStart=t.selectionEnd=s+c.length;t.dispatchEvent(new Event('input'));}else if(selectedElement&&selectedElement.type==='text'&&t){t.value+=c;t.dispatchEvent(new Event('input'));}else{addElement('text',c);}closeModal('charModalOverlay');}
+renderChars();
+
+function addSticker(t){closeModal('charModalOverlay');const g=genId('g');if(t==='urgent'){elements.push({id:genId('e'),groupId:g,type:'shape',shapeType:'circle',x:canvas.width/2,y:canvas.height/2,w:70,h:70,color:'#e74c3c',opacity:1,ratioLock:true});elements.push({id:genId('e'),groupId:g,type:'text',placeholder:'급매',text:'급매',x:canvas.width/2,y:canvas.height/2,size:22,weight:900,color:'#fff',opacity:1,align:'center',scaleX:1,scaleY:1,autoScale:true,w:70});}else if(t==='recommend'){elements.push({id:genId('e'),groupId:g,type:'shape',shapeType:'star',x:canvas.width/2,y:canvas.height/2,w:90,h:90,color:'#f1c40f',opacity:1,ratioLock:true});elements.push({id:genId('e'),groupId:g,type:'text',placeholder:'강추',text:'강력\n추천',x:canvas.width/2,y:canvas.height/2,size:18,weight:900,color:'#000',opacity:1,align:'center',scaleX:1,scaleY:1,lineHeight:110,autoScale:true,w:90});}else if(t.includes('table')){const r=t==='table_realestate';elements.push({id:genId('e'),groupId:g,type:'shape',shapeType:'rect',x:canvas.width/2,y:canvas.height/2,w:300,h:60,color:'#f8f9fa',strokeW:2,strokeC:'#bdc3c7',opacity:1});elements.push({id:genId('e'),groupId:g,type:'text',placeholder:'표',text:r?'면적: 84㎡ | 층수: 5층\n방/욕실: 3/2 | 입주: 즉시':'모집: 홀서빙 | 시급: 12,000원\n시간: 10시~22시 | 휴무: 협의',x:canvas.width/2,y:canvas.height/2,size:16,weight:700,color:'#2c3e50',opacity:1,align:'center',scaleX:1,scaleY:1,lineHeight:150,autoScale:true,w:280});}saveHistory();drawCanvas();}
+
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d'),FONT='"Noto Sans KR",sans-serif';
+let templates=[],currentTemplate=null,bgImageObj=new Image(),elements=[],selectedElement=null,currentZoom=1,clipboardElement=null,actionState='none',dragOffsetX=0,dragOffsetY=0,origX,origY,origW,origH,origSize,HANDLE_SIZE=8,historyStack=[],historyIndex=-1,snapGuideX=null,snapGuideY=null,autoSaveTimer=null,currentAdId=null,hasUnsavedChanges=false,isUpdatingPanel=false,isPreviewMode=false,allHistoryData=[],historyPage=1,isEditMode=false;
+
+window.onbeforeunload=e=>{if(hasUnsavedChanges){e.preventDefault();e.returnValue='';}};
+function markUnsaved(){hasUnsavedChanges=true; triggerGlobalDraft();} function markSaved(){hasUnsavedChanges=false;}
+
+// 🚀 v2.1: 전역 드래프트 저장 (화면 전환용)
+function triggerGlobalDraft() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        const draft = {
+            elements: elements.map(e => ({...e, imgObj: undefined})),
+            canvasSize: { w: canvas.width, h: canvas.height },
+            customer: {
+                company: document.getElementById('info_company').value,
+                name: document.getElementById('info_name').value,
+                contact: document.getElementById('info_contact').value,
+                note: document.getElementById('info_note').value
+            },
+            bgUrl: bgImageObj.src
+        };
+        localStorage.setItem('admaker_global_draft', JSON.stringify(draft));
+        document.getElementById('autoSaveText').innerText = '자동 저장됨';
+        setTimeout(()=> { document.getElementById('autoSaveText').innerText = ''; }, 2000);
+    }, 1000);
+}
+
+function saveDraftAndSwitch(url) {
+    const draft = {
+        elements: elements.map(e => ({...e, imgObj: undefined})),
+        canvasSize: { w: canvas.width, h: canvas.height },
+        customer: {
+            company: document.getElementById('info_company').value,
+            name: document.getElementById('info_name').value,
+            contact: document.getElementById('info_contact').value,
+            note: document.getElementById('info_note').value
+        },
+        bgUrl: bgImageObj.src
+    };
+    localStorage.setItem('admaker_global_draft', JSON.stringify(draft));
+    location.href = url;
+}
+
+function loadGlobalDraft() {
+    const raw = localStorage.getItem('admaker_global_draft');
+    if(!raw) return;
+    try {
+        const d = JSON.parse(raw);
+        canvas.width = d.canvasSize.w; canvas.height = d.canvasSize.h;
+        document.getElementById('info_company').value = d.customer.company || '';
+        document.getElementById('info_name').value = d.customer.name || '';
+        document.getElementById('info_contact').value = d.customer.contact || '';
+        document.getElementById('info_note').value = d.customer.note || '';
+        
+        elements = d.elements.map(e => {
+            if(e.type === 'image' && e.url) {
+                e.imgObj = new Image(); e.imgObj.crossOrigin="Anonymous";
+                e.imgObj.onload = drawCanvas; e.imgObj.src = e.url;
+            }
+            return e;
+        });
+        if(d.bgUrl && d.bgUrl.startsWith('data:')) {
+            bgImageObj.src = d.bgUrl;
+            bgImageObj.onload = () => { drawCanvas(); autoFitCanvas(); };
+        } else {
+            drawCanvas(); autoFitCanvas();
+        }
+    } catch(e) { console.error("Load draft failed", e); }
+}
+// 페이지 로드 시 드래프트 체크
+window.addEventListener('load', () => { setTimeout(loadGlobalDraft, 100); });
+
+function toggleHistoryPanel(){sidebarOpen=!sidebarOpen;document.getElementById('historyPanel').classList.toggle('collapsed');const btn=document.getElementById('btnToggleLeft');btn.classList.toggle('collapsed');btn.innerText=sidebarOpen?'◀':'▶';setTimeout(autoFitCanvas,300);}
+function togglePreviewMode(){isPreviewMode=!isPreviewMode;const cp=document.getElementById('controlsPanel'),btn=document.getElementById('btnPreviewMode');if(isPreviewMode){cp.classList.add('preview-mode');btn.style.background='#2ecc71';btn.innerText='👁️ 복귀';selectedElement=null;}else{cp.classList.remove('preview-mode');btn.style.background='#8e44ad';btn.innerText='👁️ 미리보기';}drawCanvas();setTimeout(autoFitCanvas,300);}
+function updateZoom(){currentZoom=document.getElementById('zoomSlider').value;document.getElementById('zoomValue').innerText=Math.round(currentZoom*100)+'%';document.getElementById('canvasBox').style.transform=`scale(${currentZoom})`;}
+function zoomStep(v){document.getElementById('zoomSlider').value=parseFloat(document.getElementById('zoomSlider').value)+v;updateZoom();}
+function autoFitCanvas(){const c=document.getElementById('canvasContainer'),wr=(c.clientWidth-40)/canvas.width,hr=(c.clientHeight-40)/canvas.height;let z=Math.min(wr,hr);if(z>3)z=3;if(z<0.2)z=0.2;document.getElementById('zoomSlider').value=z.toFixed(1);updateZoom();}
+
+function saveHistory(){const s=JSON.stringify(elements);if(historyIndex<historyStack.length-1)historyStack=historyStack.slice(0,historyIndex+1);if(historyStack[historyIndex]!==s){historyStack.push(s);historyIndex++;markUnsaved();triggerAutoSave();}}
+function undo(){if(historyIndex>0){historyIndex--;elements=safeParse(JSON.parse(historyStack[historyIndex]));elements.forEach(e=>{if(e.type==='image'&&e.url){e.imgObj=new Image();e.imgObj.crossOrigin="Anonymous";e.imgObj.onload=drawCanvas;e.imgObj.src=e.url;}});selectedElement=null;drawCanvas();updateAdvPanel();markUnsaved();}}
+function redo(){if(historyIndex<historyStack.length-1){historyIndex++;elements=safeParse(JSON.parse(historyStack[historyIndex]));elements.forEach(e=>{if(e.type==='image'&&e.url){e.imgObj=new Image();e.imgObj.crossOrigin="Anonymous";e.imgObj.onload=drawCanvas;e.imgObj.src=e.url;}});selectedElement=null;drawCanvas();updateAdvPanel();markUnsaved();}}
+function toggleEditMode(){isEditMode=!isEditMode;const b=document.getElementById('modeToggle'),ba=document.getElementById('basicModeArea'),ac=document.getElementById('advControls');if(isEditMode){b.className='toggle-btn unlocked';b.innerText='🔓 고급 편집 해제됨';ba.style.display='none';ac.style.display='block';}else{b.className='toggle-btn';b.innerText='🔒 고급 편집 잠금';ba.style.display='block';ac.style.display='none';selectedElement=null;drawCanvas();}}
+
+function openMemberInfo() {
+    const uid = localStorage.getItem('v8_user_id');
+    fetch(`/api/users/${uid}`).then(r=>r.json()).then(u=>{
+        document.getElementById('myId').value = u.id;
+        document.getElementById('myName').value = u.name || '';
+        document.getElementById('myContact').value = u.contact || '';
+        document.getElementById('myPassword').value = '';
+        document.getElementById('myOldPassword').value = '';
+        openModal('memberInfoModal');
+    });
+}
+function saveMyInfo() {
+    const d = {
+        id: document.getElementById('myId').value,
+        oldPassword: document.getElementById('myOldPassword').value,
+        newPassword: document.getElementById('myPassword').value,
+        name: document.getElementById('myName').value,
+        contact: document.getElementById('myContact').value
+    };
+    if (!d.oldPassword) return alert("현재 비밀번호를 입력해야 저장할 수 있습니다.");
+    fetch('/api/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
+    .then(r=>r.json()).then(r=>{
+        alert(r.message);
+        if (r.success) closeModal('memberInfoModal');
+    });
+}
+
+let cropTargetType = 'bg';
+let cropSourceImg = new Image();
+let cropActionState = 'none';
+
+function openCropModal(type) {
+    cropTargetType = type;
+    if (type === 'bg') {
+        if (!bgImageUrl) return alert("배경 이미지가 없습니다.");
+        cropSourceImg.src = bgImageUrl;
+    } else if (type === 'element') {
+        const img = selectedElement.imgObj;
+        if (!img || !img.src) return alert("이미지가 없습니다.");
+        cropSourceImg.src = img.src;
+    } else if (type === 'canvas') {
+        const prevSel = selectedElement; const prevSels = window.selectedElements ? [...window.selectedElements] : [];
+        selectedElement = null; window.selectedElements = []; drawCanvas();
+        cropSourceImg.src = canvas.toDataURL('image/png');
+        selectedElement = prevSel; window.selectedElements = prevSels; drawCanvas();
+    }
+    cropSourceImg.onload = () => {
+        const c = document.getElementById('cropCanvas');
+        if(!c) { openCropModalUI(); setTimeout(()=>openCropModal(type), 100); return; }
+        c.width = cropSourceImg.naturalWidth;
+        c.height = cropSourceImg.naturalHeight;
+        resetCropSelection();
+        openModal('cropModal');
+    };
+}
+
+function resetCropSelection() {
+    const c = document.getElementById('cropCanvas');
+    document.getElementById('cropX').value = 0;
+    document.getElementById('cropY').value = 0;
+    document.getElementById('cropW').value = c.width;
+    document.getElementById('cropH').value = c.height;
+    drawCropPreview();
+}
+
+function drawCropPreview() {
+    const c = document.getElementById('cropCanvas'), ctx2 = c.getContext('2d');
+    if(!c) return;
+    const x = parseInt(document.getElementById('cropX').value) || 0;
+    const y = parseInt(document.getElementById('cropY').value) || 0;
+    const w = parseInt(document.getElementById('cropW').value) || 0;
+    const h = parseInt(document.getElementById('cropH').value) || 0;
+    ctx2.clearRect(0, 0, c.width, c.height);
+    ctx2.drawImage(cropSourceImg, 0, 0);
+    ctx2.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx2.fillRect(0, 0, c.width, y);
+    ctx2.fillRect(0, y, x, h);
+    ctx2.fillRect(x + w, y, c.width - (x + w), h);
+    ctx2.fillRect(0, y + h, c.width, c.height - (y + h));
+    ctx2.strokeStyle = '#2ecc71';
+    ctx2.lineWidth = Math.max(2, c.width/300);
+    ctx2.strokeRect(x, y, w, h);
+
+    // 8방위 핸들 그리기
+    ctx2.fillStyle = '#fff';
+    const hs = Math.max(6, c.width/100);
+    const drawH = (hx, hy) => { ctx2.fillRect(hx - hs/2, hy - hs/2, hs, hs); ctx2.strokeRect(hx - hs/2, hy - hs/2, hs, hs); };
+    drawH(x, y); drawH(x + w/2, y); drawH(x + w, y);
+    drawH(x, y + h/2); drawH(x + w, y + h/2);
+    drawH(x, y + h); drawH(x + w/2, y + h); drawH(x + w, y + h);
+}
+
+function initCropEvents() {
+    const cc = document.getElementById('cropCanvas');
+    if(!cc) return;
+    cc.onmousedown = e => {
+        const r = cc.getBoundingClientRect(), s = cc.width / r.width;
+        const mx = (e.clientX - r.left) * s, my = (e.clientY - r.top) * s;
+        const x = parseInt(document.getElementById('cropX').value);
+        const y = parseInt(document.getElementById('cropY').value);
+        const w = parseInt(document.getElementById('cropW').value);
+        const h = parseInt(document.getElementById('cropH').value);
+        const hs = Math.max(10, cc.width/50);
+        
+        const insideH = (hx, hy) => Math.abs(mx - hx) <= hs && Math.abs(my - hy) <= hs;
+        if (insideH(x, y)) cropActionState = 'nw';
+        else if (insideH(x + w/2, y)) cropActionState = 'n';
+        else if (insideH(x + w, y)) cropActionState = 'ne';
+        else if (insideH(x, y + h/2)) cropActionState = 'w';
+        else if (insideH(x + w, y + h/2)) cropActionState = 'e';
+        else if (insideH(x, y + h)) cropActionState = 'sw';
+        else if (insideH(x + w/2, y + h)) cropActionState = 's';
+        else if (insideH(x + w, y + h)) cropActionState = 'se';
+        else {
+            cropActionState = 'drag';
+            cropStartX = mx; cropStartY = my;
+        }
+    };
+    cc.onmousemove = e => {
+        if (cropActionState === 'none') return;
+        const r = cc.getBoundingClientRect(), s = cc.width / r.width;
+        const mx = (e.clientX - r.left) * s, my = (e.clientY - r.top) * s;
+        let x = parseInt(document.getElementById('cropX').value);
+        let y = parseInt(document.getElementById('cropY').value);
+        let w = parseInt(document.getElementById('cropW').value);
+        let h = parseInt(document.getElementById('cropH').value);
+
+        if (cropActionState === 'drag') {
+            const dx = mx - cropStartX, dy = my - cropStartY;
+            const nx = Math.min(cropStartX, mx), ny = Math.min(cropStartY, my);
+            const nw = Math.abs(cropStartX - mx), nh = Math.abs(cropStartY - my);
+            document.getElementById('cropX').value = Math.round(nx);
+            document.getElementById('cropY').value = Math.round(ny);
+            document.getElementById('cropW').value = Math.round(nw);
+            document.getElementById('cropH').value = Math.round(nh);
+        } else {
+            if (cropActionState.includes('n')) { const oldY = y; y = my; h += (oldY - my); }
+            if (cropActionState.includes('s')) { h = my - y; }
+            if (cropActionState.includes('w')) { const oldX = x; x = mx; w += (oldX - mx); }
+            if (cropActionState.includes('e')) { w = mx - x; }
+            if (w < 10) w = 10; if (h < 10) h = 10;
+            document.getElementById('cropX').value = Math.round(x);
+            document.getElementById('cropY').value = Math.round(y);
+            document.getElementById('cropW').value = Math.round(w);
+            document.getElementById('cropH').value = Math.round(h);
+        }
+        drawCropPreview();
+    };
+    window.addEventListener('mouseup', () => cropActionState = 'none');
+}
+setTimeout(initCropEvents, 1000);
+
+function applyCrop() {
+    const x = parseInt(document.getElementById('cropX').value), y = parseInt(document.getElementById('cropY').value);
+    const w = parseInt(document.getElementById('cropW').value), h = parseInt(document.getElementById('cropH').value);
+    if (w < 10 || h < 10) return alert("너무 작습니다.");
+    const tc = document.createElement('canvas');
+    tc.width = w; tc.height = h;
+    const tctx = tc.getContext('2d', {willReadFrequently:true});
+
+    if (cropTargetType === 'bg') {
+        tctx.drawImage(cropSourceImg, x, y, w, h, 0, 0, w, h);
+        bgImageObj.src = tc.toDataURL('image/png');
+    } else if (cropTargetType === 'element') {
+        tctx.drawImage(cropSourceImg, x, y, w, h, 0, 0, w, h);
+        const dataUrl = tc.toDataURL('image/png');
+        selectedElement.url = dataUrl;
+        selectedElement.imgObj.src = dataUrl;
+        selectedElement.w = w;
+        selectedElement.h = h;
+        updateAdvPanel();
+    } else if (cropTargetType === 'canvas') {
+        if (bgImageObj.src) {
+            const bc = document.createElement('canvas');
+            bc.width = w; bc.height = h;
+            bc.getContext('2d').drawImage(bgImageObj, x, y, w, h, 0, 0, w, h);
+            bgImageObj.src = bc.toDataURL('image/png');
+        }
+        elements.forEach(el => { el.x -= x; el.y -= y; });
+        canvas.width = w; canvas.height = h;
+        selectedElement = null; window.selectedElements = [];
+        setTimeout(autoFitCanvas, 100);
+    }
+    closeModal('cropModal');
+    drawCanvas();
+    saveHistory();
+}
+
+// ✂️ 이미지 크롭 모달 (직원용)
+function openCropModalUI() {
+    const html = `
+    <div class="modal-overlay" id="cropModal" style="display:none;">
+        <div class="modal-content" style="width:1000px; max-width:95vw; background:#1e1e2f; padding:20px; color:#fff;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <h3 style="margin:0; color:#2ecc71;">✂️ 이미지 자유 크롭 (자르기)</h3>
+                <button class="btn-tool" onclick="closeModal('cropModal')">닫기</button>
+            </div>
+            <div style="display:flex; gap:20px;">
+                <div id="cropTargetWrapper" style="flex:1; background:#000; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center; min-height:500px; position:relative; border:2px solid #444;">
+                    <canvas id="cropCanvas" style="max-width:100%; max-height:70vh; cursor:crosshair;"></canvas>
+                </div>
+                <div style="width:240px; background:#2a2a3c; padding:20px; border-radius:8px; display:flex; flex-direction:column; gap:12px;">
+                    <div style="font-size:13px; color:#bdc3c7; margin-bottom:5px;">📍 크롭 영역 설정 (px)</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        <div class="form-group"><label style="font-size:11px;color:#aaa;">시작 X</label><input type="number" id="cropX" class="form-control" oninput="drawCropPreview()" style="background:#1a1a24;border:1px solid #444;color:#fff;padding:4px;width:100%;"></div>
+                        <div class="form-group"><label style="font-size:11px;color:#aaa;">시작 Y</label><input type="number" id="cropY" class="form-control" oninput="drawCropPreview()" style="background:#1a1a24;border:1px solid #444;color:#fff;padding:4px;width:100%;"></div>
+                        <div class="form-group"><label style="font-size:11px;color:#aaa;">너비 W</label><input type="number" id="cropW" class="form-control" oninput="drawCropPreview()" style="background:#1a1a24;border:1px solid #444;color:#fff;padding:4px;width:100%;"></div>
+                        <div class="form-group"><label style="font-size:11px;color:#aaa;">높이 H</label><input type="number" id="cropH" class="form-control" oninput="drawCropPreview()" style="background:#1a1a24;border:1px solid #444;color:#fff;padding:4px;width:100%;"></div>
+                    </div>
+                    <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
+                    <p style="font-size:12px; color:#95a5a6; line-height:1.5;">※ 마우스로 영역을 지정하거나 핸들을 조절하세요.</p>
+                    <button class="btn-full btn-success" style="margin:0; padding:12px;" onclick="applyCrop()">✂️ 크롭 적용하기</button>
+                    <button class="btn-full" style="background:#f39c12; margin:0; padding:8px;" onclick="resetCropSelection()">🔄 선택 초기화</button>
+                    <button class="btn-full" style="background:#555; margin:0; padding:8px;" onclick="closeModal('cropModal')">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+openCropModalUI();
+
+let autoFillTimer=null;
+function searchCustomerAutoFill(){const v=document.getElementById('info_company').value.trim(),l=document.getElementById('customerAutoList');if(v.length<2){l.style.display='none';return;}if(autoFillTimer)clearTimeout(autoFillTimer);autoFillTimer=setTimeout(()=>{const m=allHistoryData.filter(r=>r.company.includes(v)).slice(0,5);if(m.length>0){l.innerHTML=m.map(r=>`<div class="autocomplete-item" onclick="applyAutoFill('${r.company}','${r.name}','${r.contact}','${r.note}')"><strong>${r.company}</strong> (${r.contact})</div>`).join('');l.style.display='block';}else l.style.display='none';},300);}
+function applyAutoFill(c,n,t,nt){document.getElementById('info_company').value=c;document.getElementById('info_name').value=n;document.getElementById('info_contact').value=t;document.getElementById('info_note').value=nt;document.getElementById('customerAutoList').style.display='none';}
+document.addEventListener('click',e=>{if(e.target.id!=='info_company')document.getElementById('customerAutoList').style.display='none';});
+
+function triggerAutoSave(){if(autoSaveTimer)clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{if(!currentTemplate)return;const d={company:document.getElementById('info_company').value,name:document.getElementById('info_name').value,contact:document.getElementById('info_contact').value,note:document.getElementById('info_note').value,tplId:currentTemplate.id,canvasW:canvas.width,canvasH:canvas.height,elements:elements.map(e=>{let c={...e};delete c.imgObj;return c;}),time:new Date().toLocaleTimeString()};localStorage.setItem('v8_draft',JSON.stringify(d));document.getElementById('autoSaveText').innerText=`✔️ ${d.time} 자동저장`;setTimeout(()=>document.getElementById('autoSaveText').innerText='',3000);},3000);}
+
+// 🚀 3. HTML 충돌 원천 차단 (벽돌 쌓기 방식)
+function renderZones(arr){
+    const zb=document.getElementById('dynamicZones');zb.innerHTML='';
+    if(!arr||arr.length===0){zb.innerHTML='<p style="font-size:12px;color:#999;text-align:center;">텍스트 박스가 없습니다.</p>';return;}
+    arr.forEach(z=>{
+        const d=document.createElement('div');d.className='zone-input';
+        const lb=document.createElement('label');lb.innerText=z.placeholder||'안내';
+        const ta=document.createElement('textarea');ta.id='z_'+z.id;ta.rows=String(z.placeholder||'').includes('\n')?3:2;
+        const mt=elements.find(e=>e.id===z.id);ta.value=mt?mt.text:'';
+        ta.oninput=()=>syncText(z.id);ta.onfocus=()=>{selectedElement=elements.find(e=>e.id===z.id);updateAdvPanel();drawCanvas();};
+        d.appendChild(lb);d.appendChild(ta);zb.appendChild(d);
+    });
+}
+
+function checkAutoSave(){const s=localStorage.getItem('v8_draft');if(s){if(confirm('이전 내역 복구?')){const d=JSON.parse(s);document.getElementById('info_company').value=d.company||'';document.getElementById('info_name').value=d.name||'';document.getElementById('info_contact').value=d.contact||'';document.getElementById('info_note').value=d.note||'';const t=templates.find(x=>x.id===d.tplId);if(t){currentTemplate=t;canvas.width=d.canvasW||t.canvas_width||720;canvas.height=d.canvasH||t.canvas_height||420;if(t.bg_image_url){bgImageObj.onload=()=>{drawCanvas();setTimeout(autoFitCanvas,100);};bgImageObj.src=t.bg_image_url;}else{bgImageObj.src='';drawCanvas();setTimeout(autoFitCanvas,100);}elements=safeParse(d.elements);elements.forEach(e=>{if(e.type==='image'&&e.url){e.imgObj=new Image();e.imgObj.crossOrigin="Anonymous";e.imgObj.onload=drawCanvas;e.imgObj.src=e.url;}});renderZones(safeParse(t.zone_data));historyStack=[];historyIndex=-1;saveHistory();markUnsaved();}}else localStorage.removeItem('v8_draft');}}
+
+async function initApp(){const rs=await fetch('/api/templates');templates=await rs.json();const g=document.getElementById('modalTemplateGrid');templates.forEach(t=>{const c=document.createElement('div');c.className='template-card';c.onclick=()=>{if(hasUnsavedChanges&&!confirm('이동?'))return;selectTemplate(t);closeModal('templateModalOverlay');};c.innerHTML=`<img src="${t.thumbnail_base64}"><span>${t.title}</span>`;g.appendChild(c);});searchHistory(1);setTimeout(checkAutoSave,500);if(!localStorage.getItem('v8_draft')&&templates.length>0)openModal('templateModalOverlay');}
+function newWork(){if(hasUnsavedChanges&&!confirm('새 작업 시작?'))return;location.reload();}
+
+// 🚀 4. 무적 템플릿 로더 (절대 안 깨짐)
+function selectTemplate(tpl){
+    try {
+        currentAdId=null;document.getElementById('btnDeleteAd').style.display='none';document.getElementById('btnDuplicateAd').style.display='none';
+        currentTemplate=tpl;canvas.width=tpl.canvas_width||720;canvas.height=tpl.canvas_height||420;
+        const sa=safeParse(tpl.shape_data),za=safeParse(tpl.zone_data);
+        elements=[...sa,...za.map(z=>({...z,text:z.text||z.placeholder||''}))];
+        elements.forEach(e=>{if(e.type==='image'&&e.url){e.imgObj=new Image();e.imgObj.crossOrigin="Anonymous";e.imgObj.onload=drawCanvas;e.imgObj.src=e.url;}});
+        renderZones(za);
+        historyStack=[];historyIndex=-1;saveHistory();markSaved();
+        if(tpl.bg_image_url){bgImageObj.onload=()=>{drawCanvas();setTimeout(autoFitCanvas,100);};bgImageObj.src=tpl.bg_image_url;}else{bgImageObj.src='';drawCanvas();setTimeout(autoFitCanvas,100);}selectedElement=null;updateAdvPanel();
+    } catch(err) { alert('템플릿 로드 오류!'); console.error(err); }
+}
+
+function syncText(id){const t=document.getElementById(`z_${id}`).value,e=elements.find(x=>x.id===id);if(e)e.text=t;drawCanvas();saveHistory();markUnsaved();}
+async function uploadImage(ev){const f=ev.target.files[0];if(!f)return;const fd=new FormData();fd.append('image',f);const rs=await fetch('/api/upload-image',{method:'POST',body:fd}),d=await rs.json();if(d.success){const i=new Image();i.crossOrigin="Anonymous";i.onload=()=>{elements.push({id:genId('e'),type:'image',url:d.imageUrl,imgObj:i,x:canvas.width/2,y:canvas.height/2,w:i.naturalWidth/2,h:i.naturalHeight/2,opacity:1,frame:'none',ratioLock:true,brightness:100,contrast:100});saveHistory();drawCanvas();};i.src=d.imageUrl;}}
+function addQRCode(){const u=prompt('URL입력:','https://');if(!u)return;const q='https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data='+encodeURIComponent(u),i=new Image();i.crossOrigin="Anonymous";i.onload=()=>{elements.push({id:genId('e'),type:'image',url:q,imgObj:i,x:canvas.width/2,y:canvas.height/2,w:150,h:150,opacity:1,frame:'none',ratioLock:true});saveHistory();updateAdvPanel();drawCanvas();};i.src=q;}
+function addElement(t,s){let el={id:genId('e'),type:t,x:canvas.width/2,y:canvas.height/2,color:'#000',opacity:1,locked:false};if(t==='text')el={...el,text:s||'텍스트',size:40,weight:700,align:'center',letterSpacing:0,lineHeight:120,strokeW:0,strokeC:'#fff',shadow:false,scaleX:1,scaleY:1,autoScale:true,w:250};else if(t==='shape')el={...el,shapeType:s,w:150,h:150,color:'#3498db',strokeW:0,strokeC:'#000',ratioLock:false};elements.push(el);selectedElement=el;saveHistory();updateAdvPanel();drawCanvas();}
+function duplicateElement(){if(window.selectedElements&&window.selectedElements.length>1){let nSel=[];window.selectedElements.forEach(c=>{let d=JSON.parse(JSON.stringify(c));d.id=genId('e');d.x+=20;d.y+=20;d.groupId=null;if(d.type==='image'&&d.url){d.imgObj=new Image();d.imgObj.crossOrigin="Anonymous";d.imgObj.onload=drawCanvas;d.imgObj.src=d.url;}elements.push(d);nSel.push(d);});window.selectedElements=nSel;selectedElement=window.selectedElements[window.selectedElements.length-1];}else if(selectedElement){let c=JSON.parse(JSON.stringify(selectedElement));c.id=genId('e');c.x+=20;c.y+=20;c.groupId=null;if(c.type==='image'&&c.url){c.imgObj=new Image();c.imgObj.crossOrigin="Anonymous";c.imgObj.onload=drawCanvas;c.imgObj.src=c.url;}elements.push(c);selectedElement=c;window.selectedElements=[c];}else return;saveHistory();updateAdvPanel();drawCanvas();}
+function toggleLock(){if(selectedElement){selectedElement.locked=!selectedElement.locked;updateAdvPanel();drawCanvas();saveHistory();}}
+function syncWeight(s){if(isUpdatingPanel||!selectedElement)return;const se=document.getElementById('advWeightSel'),n=document.getElementById('advWeightNum');if(s==='sel')n.value=se.value;else{let v=parseInt(n.value);if(v<100)v=100;if(v>900)v=900;n.value=v;if(v<=400)se.value="300";else if(v<=600)se.value="500";else if(v<=800)se.value="700";else se.value="900";}updateAdv();}
+
+function drawClipPath(cx,t,x,y,w,h){cx.beginPath();if(t==='circle')cx.arc(x,y,Math.min(w,h)/2,0,Math.PI*2);else if(t==='rounded'){const r=arguments[6]!==undefined?arguments[6]:20;cx.moveTo(x-w/2+r,y-h/2);cx.arcTo(x+w/2,y-h/2,x+w/2,y+h/2,r);cx.arcTo(x+w/2,y+h/2,x-w/2,y+h/2,r);cx.arcTo(x-w/2,y+h/2,x-w/2,y-h/2,r);cx.arcTo(x-w/2,y-h/2,x+w/2,y-h/2,r);}else if(t==='polygon'){const s=6,sz=Math.min(w,h)/2;for(let i=0;i<=s;i++){const a=i*2*Math.PI/s-Math.PI/2;cx[i===0?'moveTo':'lineTo'](x+sz*Math.cos(a),y+sz*Math.sin(a));}}else if(t==='star'){const s=5,or=Math.min(w,h)/2,ir=or/2;for(let i=0;i<=s*2;i++){const r=i%2===0?or:ir,a=i*Math.PI/s-Math.PI/2;cx[i===0?'moveTo':'lineTo'](x+r*Math.cos(a),y+r*Math.sin(a));}}}
+function drawCanvas(){
+    try {
+        ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);
+        if(bgImageObj.src)ctx.drawImage(bgImageObj,0,0,bgImageObj.naturalWidth||canvas.width,bgImageObj.naturalHeight||canvas.height);
+        elements.forEach(e=>{
+            ctx.save();ctx.globalAlpha=e.opacity||1;ctx.fillStyle=e.color;
+            if(e.type==='shape'){ctx.beginPath();if(e.shapeType==='rect')ctx.rect(e.x-e.w/2,e.y-e.h/2,e.w,e.h);else if(e.shapeType==='circle')ctx.arc(e.x,e.y,Math.min(e.w,e.h)/2,0,Math.PI*2);else if(e.shapeType==='round')drawClipPath(ctx,'rounded',e.x,e.y,e.w,e.h,e.borderRadius);else if(e.shapeType==='triangle'){ctx.moveTo(e.x,e.y-e.h/2);ctx.lineTo(e.x+e.w/2,e.y+e.h/2);ctx.lineTo(e.x-e.w/2,e.y+e.h/2);ctx.closePath();}else if(e.shapeType==='line'){ctx.moveTo(e.x-e.w/2,e.y);ctx.lineTo(e.x+e.w/2,e.y);ctx.strokeStyle=e.color;ctx.lineWidth=e.h;ctx.stroke();ctx.beginPath();}if(e.shapeType!=='line'){ctx.fill();if(e.strokeW>0){ctx.strokeStyle=e.strokeC;ctx.lineWidth=e.strokeW;ctx.stroke();}}}
+            else if(e.type==='image'&&e.imgObj){let f='';if(e.brightness!==undefined&&e.brightness!==100)f+=`brightness(${e.brightness}%) `;if(e.contrast!==undefined&&e.contrast!==100)f+=`contrast(${e.contrast}%) `;if(f)ctx.filter=f.trim();if(e.frame&&e.frame!=='none'){drawClipPath(ctx,e.frame,e.x,e.y,e.w,e.h);ctx.clip();}ctx.drawImage(e.imgObj,e.x-e.w/2,e.y-e.h/2,e.w,e.h);}
+            else if (e.type === 'text') {
+                ctx.translate(e.x, e.y);
+                let finalScaleX = e.scaleX || 1;
+                ctx.font = `${e.weight || 400} ${e.size}px ${FONT}`;
+                ctx.textAlign = e.align || 'center';
+                ctx.textBaseline = 'top';
+                ctx.letterSpacing = (e.letterSpacing || 0) + "px";
+                const tStr = e.text != null ? String(e.text) : '';
+                const ls = tStr.split('\n');
+                if (e.autoScale && e.w > 0) {
+                    let maxW = 0;
+                    ls.forEach(l => { const mw = ctx.measureText(l).width; if (mw > maxW) maxW = mw; });
+                    if (maxW * finalScaleX > e.w) finalScaleX = e.w / maxW;
+                }
+                ctx.scale(finalScaleX, e.scaleY || 1);
+                if (e.shadow) { ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3; }
+                const lh = e.size * ((e.lineHeight || 120) / 100), sy = -(ls.length * lh) / 2;
+                ls.forEach((l, i) => { const ly = sy + i * lh; if (e.strokeW > 0) { ctx.shadowColor = 'transparent'; ctx.strokeStyle = e.strokeC; ctx.lineWidth = e.strokeW; ctx.lineJoin = 'round'; ctx.strokeText(l, 0, ly); } if (e.shadow) ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.fillText(l, 0, ly); });
+            }
+            ctx.restore();if(isEditMode&&!isPreviewMode){if(window.selectedElements&&window.selectedElements.length>1&&window.selectedElements.some(sel=>sel.id===e.id))drawHandles(e,true);else if(selectedElement&&(selectedElement.id===e.id||(selectedElement.groupId&&selectedElement.groupId===e.groupId)))drawHandles(e,selectedElement.id!==e.id);}
+        });
+        if(!isPreviewMode&&snapGuideX!==null){ctx.strokeStyle='#e74c3c';ctx.lineWidth=1;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(snapGuideX,0);ctx.lineTo(snapGuideX,canvas.height);ctx.stroke();}if(!isPreviewMode&&snapGuideY!==null){ctx.strokeStyle='#e74c3c';ctx.lineWidth=1;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(0,snapGuideY);ctx.lineTo(canvas.width,snapGuideY);ctx.stroke();}if(window.selectionBox&&window.selectionBox.active){ctx.fillStyle='rgba(52,152,219,0.3)';ctx.strokeStyle='#3498db';ctx.lineWidth=1;ctx.setLineDash([5,5]);const sx=Math.min(window.selectionBox.startX,window.selectionBox.endX),sy=Math.min(window.selectionBox.startY,window.selectionBox.endY),w=Math.abs(window.selectionBox.endX-window.selectionBox.startX),h=Math.abs(window.selectionBox.endY-window.selectionBox.startY);ctx.fillRect(sx,sy,w,h);ctx.strokeRect(sx,sy,w,h);}ctx.setLineDash([]);
+    } catch(e) { console.error(e); }
+}
+function drawHandles(e,ig){ctx.save();ctx.strokeStyle=e.locked?'#e74c3c':'#00a8ff';ctx.lineWidth=2;ctx.setLineDash([4,4]);let b=getBounds(e);ctx.strokeRect(b.x,b.y,b.w,b.h);ctx.setLineDash([]);ctx.fillStyle='#fff';if(!e.locked&&!ig){const dh=(hx,hy)=>{ctx.fillRect(hx-4,hy-4,8,8);ctx.strokeRect(hx-4,hy-4,8,8);};dh(b.x,b.y);dh(b.x+b.w/2,b.y);dh(b.x+b.w,b.y);dh(b.x,b.y+b.h/2);dh(b.x+b.w,b.y+b.h/2);dh(b.x,b.y+b.h);dh(b.x+b.w/2,b.y+b.h);dh(b.x+b.w,b.y+b.h);}ctx.restore();}
+function getBounds(e){if(e.type==='shape'||e.type==='image')return{x:e.x-e.w/2,y:e.y-e.h/2,w:e.w,h:e.h};ctx.font=`${e.weight||400} ${e.size}px ${FONT}`;ctx.letterSpacing=(e.letterSpacing||0)+"px";const tStr=e.text!=null?String(e.text):'';const ls=tStr.split('\n');let mW=0;ls.forEach(l=>{const w=ctx.measureText(l).width;if(w>mW)mW=w;});const th=ls.length*(e.size*((e.lineHeight||120)/100)),scX=e.scaleX||1,scY=e.scaleY||1,sW=mW*scX,sH=th*scY;let sx=e.x-sW/2;if(e.align==='left')sx=e.x;if(e.align==='right')sx=e.x-sW;return{x:sx-5,y:(e.y-sH/2)-5,w:sW+10,h:sH+10};}
+
+window.selectedElements = []; window.selectionBox = null; window.clipboardElements = [];
+canvas.addEventListener('mousedown',e=>{if(isPreviewMode||!isEditMode)return;const r=canvas.getBoundingClientRect(),mx=(e.clientX-r.left)/currentZoom,my=(e.clientY-r.top)/currentZoom;if(selectedElement&&!selectedElement.locked&&window.selectedElements.length<=1){const b=getBounds(selectedElement);const iH=(hx,hy)=>Math.abs(mx-hx)<=8&&Math.abs(my-hy)<=8;if(iH(b.x,b.y))actionState='nw';else if(iH(b.x+b.w/2,b.y))actionState='n';else if(iH(b.x+b.w,b.y))actionState='ne';else if(iH(b.x,b.y+b.h/2))actionState='w';else if(iH(b.x+b.w,b.y+b.h/2))actionState='e';else if(iH(b.x,b.y+b.h))actionState='sw';else if(iH(b.x+b.w/2,b.y+b.h))actionState='s';else if(iH(b.x+b.w,b.y+b.h))actionState='se';if(actionState!=='none'){origX=selectedElement.x;origY=selectedElement.y;origW=b.w;origH=b.h;origSize=selectedElement.size||0;return;}}actionState='none';snapGuideX=null;snapGuideY=null;let clickedEl=null;for(let i=elements.length-1;i>=0;i--){const b=getBounds(elements[i]);if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){clickedEl=elements[i];break;}}window.selectionBox=null;if(clickedEl){if(e.shiftKey){window.selectedElements=window.selectedElements||[];if(window.selectedElements.includes(clickedEl)){window.selectedElements=window.selectedElements.filter(x=>x!==clickedEl);selectedElement=window.selectedElements[window.selectedElements.length-1]||null;}else{window.selectedElements.push(clickedEl);selectedElement=clickedEl;if(!clickedEl.locked){actionState='drag';dragOffsetX=mx-clickedEl.x;dragOffsetY=my-clickedEl.y;}}}else{if(window.selectedElements&&window.selectedElements.length>1&&window.selectedElements.includes(clickedEl)){selectedElement=clickedEl;if(!clickedEl.locked){actionState='drag';dragOffsetX=mx-clickedEl.x;dragOffsetY=my-clickedEl.y;}}else{window.selectedElements=[clickedEl];selectedElement=clickedEl;if(!clickedEl.locked){actionState='drag';dragOffsetX=mx-clickedEl.x;dragOffsetY=my-clickedEl.y;}}}}else{selectedElement=null;window.selectedElements=[];window.selectionBox={startX:mx,startY:my,endX:mx,endY:my,active:true};}updateAdvPanel();drawCanvas();});
+canvas.addEventListener('mousemove',e=>{if(isPreviewMode||!isEditMode)return;const r=canvas.getBoundingClientRect(),mx=(e.clientX-r.left)/currentZoom,my=(e.clientY-r.top)/currentZoom;if(window.selectionBox&&window.selectionBox.active){window.selectionBox.endX=mx;window.selectionBox.endY=my;drawCanvas();return;}snapGuideX=null;snapGuideY=null;if(actionState==='drag'&&selectedElement){const dx=mx-dragOffsetX-selectedElement.x,dy=my-dragOffsetY-selectedElement.y;if(window.selectedElements&&window.selectedElements.length>1&&window.selectedElements.includes(selectedElement)){window.selectedElements.forEach(el=>{if(!el.locked){el.x+=dx;el.y+=dy;}});}else{selectedElement.x+=dx;selectedElement.y+=dy;if(selectedElement.groupId){elements.forEach(el=>{if(el.groupId===selectedElement.groupId&&el.id!==selectedElement.id){el.x+=dx;el.y+=dy;}});}if(Math.abs(selectedElement.x-canvas.width/2)<8){const cdx=(canvas.width/2)-selectedElement.x;selectedElement.x+=cdx;if(selectedElement.groupId)elements.forEach(el=>{if(el.groupId===selectedElement.groupId&&el.id!==selectedElement.id)el.x+=cdx;});snapGuideX=canvas.width/2;}if(Math.abs(selectedElement.y-canvas.height/2)<8){const cdy=(canvas.height/2)-selectedElement.y;selectedElement.y+=cdy;if(selectedElement.groupId)elements.forEach(el=>{if(el.groupId===selectedElement.groupId&&el.id!==selectedElement.id)el.y+=cdy;});snapGuideY=canvas.height/2;}}drawCanvas();}else if(actionState!=='none'&&selectedElement){const dx=mx-origX,dy=my-origY;if(selectedElement.type==='shape'||selectedElement.type==='image'){let effDx=0,effDy=0;if(actionState.includes('e'))effDx=dx;else if(actionState.includes('w'))effDx=-dx;if(actionState.includes('s'))effDy=dy;else if(actionState.includes('n'))effDy=-dy;let nw=origW+effDx,nh=origH+effDy;if(selectedElement.ratioLock){if(actionState==='s'||actionState==='n')nw=origW*(nh/origH);else nh=origH*(nw/origW);}if(nw>10&&nh>10){selectedElement.w=nw;selectedElement.h=nh;let dw=nw-origW,dh=nh-origH;if(actionState.includes('e'))selectedElement.x=origX+dw/2;if(actionState.includes('w'))selectedElement.x=origX-dw/2;if(actionState.includes('s'))selectedElement.y=origY+dh/2;if(actionState.includes('n'))selectedElement.y=origY-dh/2;let cw=document.getElementById('advWidth');if(cw){cw.value=Math.round(selectedElement.w);document.getElementById('advHeight').value=Math.round(selectedElement.h);}}}else{let ns=origSize;if(actionState.includes('s')||actionState.includes('e'))ns+=Math.max(dx,dy);else if(actionState.includes('n')||actionState.includes('w'))ns-=Math.min(dx,dy);if(ns>10){selectedElement.size=Math.round(ns);let sr=ns/origSize;let dw=origW*(sr-1),dh=origH*(sr-1);if(selectedElement.align==='center'||!selectedElement.align){if(actionState.includes('e'))selectedElement.x=origX+dw/2;if(actionState.includes('w'))selectedElement.x=origX-dw/2;}else if(selectedElement.align==='left'){if(actionState.includes('w'))selectedElement.x=origX-dw;}else if(selectedElement.align==='right'){if(actionState.includes('e'))selectedElement.x=origX+dw;}if(actionState.includes('s'))selectedElement.y=origY+dh/2;if(actionState.includes('n'))selectedElement.y=origY-dh/2;let cs=document.getElementById('advSize');if(cs)cs.value=selectedElement.size;}}drawCanvas();updateAdvPanel();}});
+window.addEventListener('mouseup',()=>{if(window.selectionBox&&window.selectionBox.active){window.selectionBox.active=false;const x1=Math.min(window.selectionBox.startX,window.selectionBox.endX),y1=Math.min(window.selectionBox.startY,window.selectionBox.endY),x2=Math.max(window.selectionBox.startX,window.selectionBox.endX),y2=Math.max(window.selectionBox.startY,window.selectionBox.endY);window.selectedElements=[];elements.forEach(el=>{const b=getBounds(el);if(!(b.x>x2||b.x+b.w<x1||b.y>y2||b.y+b.h<y1))window.selectedElements.push(el);});if(window.selectedElements.length>0){selectedElement=window.selectedElements[window.selectedElements.length-1];}else{selectedElement=null;}window.selectionBox=null;updateAdvPanel();drawCanvas();return;}if(actionState!=='none')saveHistory();actionState='none';snapGuideX=null;snapGuideY=null;drawCanvas();});
+window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;if(e.ctrlKey&&e.key==='z'){undo();return;}if(isEditMode&&e.ctrlKey&&(e.key==='g'||e.key==='G')){if(window.selectedElements&&window.selectedElements.length>1){const gId=genId('g');window.selectedElements.forEach(el=>el.groupId=gId);alert('그룹해제됨!');drawCanvas();saveHistory();updateAdvPanel();}else if(selectedElement){selectedElement.groupId=null;alert('그룹해제됨!');drawCanvas();saveHistory();updateAdvPanel();}e.preventDefault();return;}if(isEditMode&&e.altKey&&(e.key==='d'||e.key==='D')){duplicateElement();e.preventDefault();return;}if(isEditMode&&e.ctrlKey&&(e.key==='c'||e.key==='C')){if(window.selectedElements&&window.selectedElements.length>1){window.clipboardElements=JSON.parse(JSON.stringify(window.selectedElements));alert('다중 복사됨');}else if(selectedElement){clipboardElement=JSON.parse(JSON.stringify(selectedElement));window.clipboardElements=[clipboardElement];alert('복사됨');}e.preventDefault();return;}if(isEditMode&&e.ctrlKey&&(e.key==='v'||e.key==='V')){if(window.clipboardElements&&window.clipboardElements.length>0){window.selectedElements=[];window.clipboardElements.forEach(c=>{let d=JSON.parse(JSON.stringify(c));d.id=genId('e');d.x+=20;d.y+=20;d.groupId=null;if(d.type==='image'&&d.url){d.imgObj=new Image();d.imgObj.crossOrigin="Anonymous";d.imgObj.onload=drawCanvas;d.imgObj.src=d.url;}elements.push(d);window.selectedElements.push(d);});selectedElement=window.selectedElements[window.selectedElements.length-1];saveHistory();updateAdvPanel();drawCanvas();}else if(clipboardElement){let c=JSON.parse(JSON.stringify(clipboardElement));c.id=genId('e');c.x+=20;c.y+=20;c.groupId=null;if(c.type==='image'&&c.url){c.imgObj=new Image();c.imgObj.crossOrigin="Anonymous";c.imgObj.onload=drawCanvas;c.imgObj.src=c.url;}elements.push(c);selectedElement=c;window.selectedElements=[c];saveHistory();updateAdvPanel();drawCanvas();}e.preventDefault();return;}if(!selectedElement)return;if(isEditMode&&e.key==='Delete'){if(window.selectedElements&&window.selectedElements.length>1){elements=elements.filter(el=>!window.selectedElements.some(sel=>sel.id===el.id));selectedElement=null;window.selectedElements=[];saveHistory();updateAdvPanel();drawCanvas();}else deleteAdv();}else if(isEditMode&&!selectedElement.locked&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){const m=e.shiftKey?10:1;let dx=0,dy=0;if(e.key==='ArrowUp')dy-=m;if(e.key==='ArrowDown')dy+=m;if(e.key==='ArrowLeft')dx-=m;if(e.key==='ArrowRight')dx+=m;if(window.selectedElements&&window.selectedElements.length>1){window.selectedElements.forEach(el=>{if(!el.locked){el.x+=dx;el.y+=dy;}});}else{selectedElement.x+=dx;selectedElement.y+=dy;if(selectedElement.groupId)elements.forEach(el=>{if(el.groupId===selectedElement.groupId&&el.id!==selectedElement.id){el.x+=dx;el.y+=dy;}});}drawCanvas();e.preventDefault();}});
+window.addEventListener('keyup',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))saveHistory();});
+
+function changeLayer(d){if(!selectedElement)return;const i=elements.findIndex(e=>e.id===selectedElement.id);if(d===1&&i<elements.length-1){const t=elements[i];elements[i]=elements[i+1];elements[i+1]=t;saveHistory();drawCanvas();}if(d===-1&&i>0){const t=elements[i];elements[i]=elements[i-1];elements[i-1]=t;saveHistory();drawCanvas();}}
+
+function updateAdvPanel(){if(!isEditMode)return;const e=selectedElement;document.getElementById('advNoSelect').style.display=e?'none':'block';document.getElementById('advSettings').style.display=e?'block':'none';if(!e)return;isUpdatingPanel=true;document.getElementById('btnLock').innerText=e.locked?'🔓 잠금해제':'🔒 잠금';document.getElementById('advColor').value=e.color||'#000';document.getElementById('advOpacity').value=e.opacity||1;document.getElementById('advTextGroup').style.display=e.type==='text'?'block':'none';document.getElementById('advSizeGroup').style.display=e.type==='text'?'block':'none';document.getElementById('advLetterSpaceGroup').style.display=e.type==='text'?'block':'none';document.getElementById('advLineHeightGroup').style.display=e.type==='text'?'block':'none';document.getElementById('advWeightGroup').style.display=e.type==='text'?'block':'none';document.getElementById('advStrokeGroup').style.display=(e.type==='text'||e.type==='shape')?'block':'none';document.getElementById('advShadowGroup').style.display=e.type==='text'?'block':'none';document.getElementById('advScaleXGroup').style.display=e.type==='text'?'block':'none';document.getElementById('advScaleYGroup').style.display=e.type==='text'?'block':'none';document.getElementById('advBorderRadiusGroup').style.display=(e.type==='shape'&&e.shapeType==='round')?'block':'none';document.getElementById('advWidthGroup').style.display=(e.type==='shape'||e.type==='image'||e.type==='text')?'block':'none';document.getElementById('advHeightGroup').style.display=(e.type==='shape'||e.type==='image')?'block':'none';document.getElementById('advRatioLockGroup').style.display=(e.type==='shape'||e.type==='image')?'block':'none';document.getElementById('advFilterGroup').style.display=e.type==='image'?'block':'none';document.getElementById('btnCropElem').style.display=e.type==='image'?'inline-block':'none';if(e.type==='text'){if(!e.w){ctx.font=`${e.weight||400} ${e.size}px ${FONT}`;const tStr=e.text!=null?String(e.text):'';const ls=tStr.split('\n');let mw=0;ls.forEach(l=>{const tw=ctx.measureText(l).width;if(tw>mw)mw=tw;});e.w=Math.max(Math.round(mw),50);}document.getElementById('advText').value=e.text||'';document.getElementById('advSize').value=e.size;document.getElementById('advLetterSpace').value=e.letterSpacing||0;document.getElementById('advScaleX').value=Math.round((e.scaleX||1)*100);document.getElementById('advScaleY').value=Math.round((e.scaleY||1)*100);document.getElementById('advLineHeight').value=e.lineHeight||120;document.getElementById('advWeightNum').value=e.weight||700;syncWeight('num');document.getElementById('advAlign').value=e.align||'center';document.getElementById('advStrokeW').value=e.strokeW||0;document.getElementById('advStrokeC').value=e.strokeC||'#fff';document.getElementById('advShadow').checked=e.shadow||false;document.getElementById('advAutoScale').checked=e.autoScale!==undefined?e.autoScale:true;document.getElementById('advWidth').value=Math.round(e.w||250);}else if(e.type==='shape'){document.getElementById('advBorderRadius').value=e.borderRadius!==undefined?e.borderRadius:20;document.getElementById('advWidth').value=Math.round(e.w);document.getElementById('advHeight').value=Math.round(e.h);document.getElementById('advStrokeW').value=e.strokeW||0;document.getElementById('advStrokeC').value=e.strokeC||'#000';document.getElementById('advRatioLock').checked=e.ratioLock||false;}else if(e.type==='image'){document.getElementById('advWidth').value=Math.round(e.w);document.getElementById('advHeight').value=Math.round(e.h);document.getElementById('advFrame').value=e.frame||'none';document.getElementById('advRatioLock').checked=e.ratioLock||false;document.getElementById('advBrightness').value=e.brightness||100;document.getElementById('advContrast').value=e.contrast||100;}setTimeout(()=>{isUpdatingPanel=false;},50);}
+function updateAdv(){if(isUpdatingPanel||!selectedElement)return;const e=selectedElement;e.color=document.getElementById('advColor').value;e.opacity=parseFloat(document.getElementById('advOpacity').value);if(e.type==='text'){e.text=document.getElementById('advText').value;e.size=parseInt(document.getElementById('advSize').value);e.letterSpacing=parseInt(document.getElementById('advLetterSpace').value);e.scaleX=(parseInt(document.getElementById('advScaleX').value)||100)/100;e.scaleY=(parseInt(document.getElementById('advScaleY').value)||100)/100;e.lineHeight=parseInt(document.getElementById('advLineHeight').value);e.weight=document.getElementById('advWeightNum').value;e.align=document.getElementById('advAlign').value;e.strokeW=parseInt(document.getElementById('advStrokeW').value)||0;e.strokeC=document.getElementById('advStrokeC').value;e.shadow=document.getElementById('advShadow').checked;e.autoScale=document.getElementById('advAutoScale').checked;e.w=parseInt(document.getElementById('advWidth').value)||0;}else if(e.type==='shape'){e.borderRadius=parseInt(document.getElementById('advBorderRadius').value)||0;e.w=parseInt(document.getElementById('advWidth').value);e.h=parseInt(document.getElementById('advHeight').value);e.strokeW=parseInt(document.getElementById('advStrokeW').value)||0;e.strokeC=document.getElementById('advStrokeC').value;e.ratioLock=document.getElementById('advRatioLock').checked;}else if(e.type==='image'){e.w=parseInt(document.getElementById('advWidth').value);e.h=parseInt(document.getElementById('advHeight').value);e.frame=document.getElementById('advFrame').value;e.ratioLock=document.getElementById('advRatioLock').checked;e.brightness=parseInt(document.getElementById('advBrightness').value);e.contrast=parseInt(document.getElementById('advContrast').value);}drawCanvas();saveHistory();const zi=document.getElementById(`z_${e.id}`);if(zi)zi.value=e.text;}
+function deleteAdv(){if(!selectedElement)return;if(window.selectedElements&&window.selectedElements.length>1){elements=elements.filter(el=>!window.selectedElements.some(sel=>sel.id===el.id));selectedElement=null;window.selectedElements=[];}else{elements=elements.filter(e=>e.id!==selectedElement.id);selectedElement=null;window.selectedElements=[];}saveHistory();updateAdvPanel();drawCanvas();}
+
+async function saveToDB(){const c=document.getElementById('info_company').value.trim();if(!c)return alert("상호명 필수!");localStorage.removeItem('v8_draft');markSaved();const p=selectedElement;selectedElement=null;isPreviewMode=true;drawCanvas();const tc=document.createElement('canvas');tc.width=200;tc.height=(canvas.height/canvas.width)*200;tc.getContext('2d').drawImage(canvas,0,0,tc.width,tc.height);isPreviewMode=false;selectedElement=p;drawCanvas();const d={id:currentAdId,company:c,name:document.getElementById('info_name').value,contact:document.getElementById('info_contact').value,note:document.getElementById('info_note').value,templateType:currentTemplate.id,canvas_width:canvas.width,canvas_height:canvas.height,zoneData:elements.map(e=>{let cp={...e};delete cp.imgObj;return cp;}),thumbnail_base64:tc.toDataURL('image/jpeg',0.5)};const rs=await fetch('/api/ads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});const r=await rs.json();if(r.success){alert('저장 완료!');currentAdId=r.id;document.getElementById('btnDeleteAd').style.display='inline-block';document.getElementById('btnDuplicateAd').style.display='inline-block';searchHistory(1);}}
+function duplicateWork(){if(!currentAdId)return;currentAdId=null;document.getElementById('info_company').value+=' (복사본)';document.getElementById('btnDeleteAd').style.display='none';document.getElementById('btnDuplicateAd').style.display='none';markUnsaved();alert("복제됨! 저장 누르세요.");}
+async function deleteWork(){if(!currentAdId)return;if(confirm('정말 삭제?')){if(confirm('복구 불가! 계속?')){const rs=await fetch(`/api/ads/${currentAdId}`,{method:'DELETE'});if((await rs.json()).success){alert('삭제됨');newWork();}}}}
+function triggerQuickClone(e,id){e.stopPropagation();const t=allHistoryData.find(r=>r.id===id);if(t){if(hasUnsavedChanges&&!confirm('저장안됨 무시?'))return;loadHist(t);setTimeout(()=>duplicateWork(),300);}}
+
+async function searchHistory(p=1){if(p===1)historyPage=1;const k=document.getElementById('searchInput').value,d=document.getElementById('searchDate').value,rs=await fetch(`/api/ads?search=${k}&date=${d}`),rows=await rs.json();allHistoryData=rows;const c=document.getElementById('historyList');if(p===1)c.innerHTML='';const l=20,os=(p-1)*l,cr=rows.slice(os,os+l);cr.forEach(r=>{const cd=document.createElement('div');cd.className='history-card';cd.onclick=()=>loadHist(r);cd.innerHTML=`<button class="btn-quick-clone" onclick="triggerQuickClone(event,${r.id})">👯복제</button><img src="${r.thumbnail_base64||''}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\'/%3E'"><div class="history-info"><strong>${sanitize(r.company)}</strong><span>${r.created_at.split(' ')[0]}</span></div>`;c.appendChild(cd);});if(document.getElementById('loadMoreBtn'))document.getElementById('loadMoreBtn').remove();if(rows.length>os+l){const b=document.createElement('button');b.id='loadMoreBtn';b.className='load-more-btn';b.innerText='▼ 20개 더 보기';b.onclick=()=>searchHistory(historyPage+1);c.appendChild(b);}}
+function loadHist(r){
+    try{
+        if(hasUnsavedChanges&&!confirm('무시하고 불러오기?'))return;
+        currentAdId=r.id;document.getElementById('btnDeleteAd').style.display='inline-block';document.getElementById('btnDuplicateAd').style.display='inline-block';
+        document.getElementById('info_company').value=r.company;document.getElementById('info_name').value=r.name;document.getElementById('info_contact').value=r.contact;document.getElementById('info_note').value=r.note;
+        const tpl=templates.find(t=>t.id==r.templateType);
+        if(tpl){
+            currentTemplate=tpl;canvas.width=r.canvas_width||tpl.canvas_width||720;canvas.height=r.canvas_height||tpl.canvas_height||420;
+            if(tpl.bg_image_url){bgImageObj.onload=()=>{drawCanvas();setTimeout(autoFitCanvas,100);};bgImageObj.src=tpl.bg_image_url;}else{bgImageObj.src='';drawCanvas();setTimeout(autoFitCanvas,100);}
+            setTimeout(()=>{
+                elements=safeParse(r.zoneData);
+                elements.forEach(e=>{if(e.type==='image'&&e.url){e.imgObj=new Image();e.imgObj.crossOrigin="Anonymous";e.imgObj.onload=drawCanvas;e.imgObj.src=e.url;}});
+                renderZones(safeParse(tpl.zone_data)); 
+                historyStack=[];historyIndex=-1;saveHistory();markSaved();drawCanvas();
+            },200);
+        }
+    } catch(err) { console.error(err); }
+}
+async function downloadFile(type){
+    const cy=document.getElementById('info_company').value.trim(),ct=document.getElementById('info_contact').value.trim(),dt=new Date(),ds=String(dt.getFullYear()).slice(2)+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');
+    let fa=[];if(cy)fa.push(cy);if(ct)fa.push(ct);fa.push(ds);const fn=fa.join('_');
+    
+    // 🐛 버그 수정: 다운로드 시 선택 핸들 숨기기
+    const prevSel = selectedElement; const prevSels = window.selectedElements ? [...window.selectedElements] : [];
+    selectedElement = null; window.selectedElements = []; drawCanvas();
+
+    if(type==='jpg'){
+        const l=document.createElement('a');l.download=`${fn}.jpg`;l.href=canvas.toDataURL('image/jpeg',0.8);l.click();
+        // 원상복구
+        selectedElement = prevSel; window.selectedElements = prevSels; drawCanvas();
+    }else{
+        document.getElementById('loadingModal').style.display='flex';
+        try{
+            const rs=await fetch('/Pretendard-Regular.ttf'),bs=new Uint8Array(await rs.arrayBuffer());
+            let b='';for(let i=0;i<bs.length;i++)b+=String.fromCharCode(bs[i]);
+            const p=new window.jspdf.jsPDF({orientation:canvas.width>canvas.height?'l':'p',unit:'px',format:[canvas.width,canvas.height]});
+            p.addFileToVFS('font.ttf',window.btoa(b));p.addFont('font.ttf','Font','normal');p.setFont('Font');
+            p.addImage(canvas.toDataURL('image/jpeg',1.0),'JPEG',0,0,canvas.width,canvas.height);
+            p.setGState(new p.GState({opacity:0}));
+            elements.forEach(e=>{if(!e.text)return;p.setFontSize(e.size);const ls=String(e.text).split('\n'),lh=e.size*((e.lineHeight||120)/100);ls.forEach((l,i)=>p.text(l,e.x,e.y-(ls.length*lh)/2+i*lh,{align:e.align,baseline:'top',charSpace:e.letterSpacing||0}));});
+            p.save(`${fn}.pdf`);
+        }catch(e){alert("PDF 생성오류");}
+        finally{
+            if(document.getElementById('loadingModal'))document.getElementById('loadingModal').style.display='none';
+            // 원상복구
+            selectedElement = prevSel; window.selectedElements = prevSels; drawCanvas();
+        }
+    }
+}
+
+window.addEventListener('resize',autoFitCanvas);window.onload=initApp;
+
+const catMsgs = ["[ID] 화이팅!!", "[ID] 힘내^^V", "[ID]님 멋지다냥!", "오늘도 칼퇴하자냥!", "완벽한 디자인이다냥~", "난 황용식이다냥!"];
+function showCatMsg(force = false) {
+    const bubble = document.getElementById('catMsg');
+    if (!bubble || (bubble.classList.contains('show') && !force)) return;
+    const uid = localStorage.getItem('v8_user_id') || '직원';
+    const msg = catMsgs[Math.floor(Math.random() * catMsgs.length)].replace(/\[ID\]/g, uid);
+    bubble.innerText = msg;
+    bubble.classList.add('show');
+    setTimeout(() => bubble.classList.remove('show'), 3500);
+}
+setInterval(() => showCatMsg(), 12000);
+setTimeout(() => showCatMsg(true), 2000);
+
+function initCatDrag() {
+    const mover = document.getElementById('catMover');
+    if(!mover) return;
+    let isDragging = false, hasMoved = false, startX, startY, initLeft, initTop;
+    mover.onmousedown = function(e) {
+        e.preventDefault(); isDragging = true; hasMoved = false; startX = e.clientX; startY = e.clientY;
+        const rect = mover.getBoundingClientRect(); initLeft = rect.left; initTop = rect.top;
+        document.addEventListener('mousemove', dragMouseMove); document.addEventListener('mouseup', dragMouseUp);
+    };
+    function dragMouseMove(e) {
+        if (!isDragging) return; const dx = e.clientX - startX, dy = e.clientY - startY;
+        if(Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved = true;
+        if(hasMoved) { mover.style.right = 'auto'; mover.style.bottom = 'auto'; mover.style.left = (initLeft + dx) + 'px'; mover.style.top = (initTop + dy) + 'px'; }
+    }
+    function dragMouseUp() {
+        isDragging = false; document.removeEventListener('mousemove', dragMouseMove); document.removeEventListener('mouseup', dragMouseUp);
+        if(!hasMoved) showCatMsg(true);
+    }
+}
+setTimeout(initCatDrag, 500);
+</script>
+
+<div id="catMover">
+    <div class="cat-container">
+        <div class="cat-speech-bubble" id="catMsg"></div>
+        <div class="wandering-cat" title="야옹! 이동시켜봐라냥!"></div>
+    </div>
+</div>
+
+</body>
+</html>
