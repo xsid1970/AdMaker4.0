@@ -1005,7 +1005,7 @@ function showCatMsg(force = false) {
     const msg = catMsgs[Math.floor(Math.random() * catMsgs.length)].replace(/\[ID\]/g, uid);
     bubble.innerText = msg;
     bubble.classList.add('show');
-    setTimeout(() => bubble.classList.remove('show'), 3500);
+    setTimeout(() => bubble.classList.remove('show'), 6000);
 }
 setInterval(() => showCatMsg(), 12000);
 setTimeout(() => showCatMsg(true), 2000);

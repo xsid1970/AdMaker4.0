@@ -222,7 +222,7 @@
         const msg = catMsgs[Math.floor(Math.random() * catMsgs.length)];
         bubble.innerText = msg;
         bubble.classList.add('show');
-        setTimeout(() => bubble.classList.remove('show'), 3500);
+        setTimeout(() => bubble.classList.remove('show'), 6000);
     }
     // 로그인 창에서는 아이디가 아직 없으므로 기본 랜덤 인사말
     setInterval(() => showCatMsg(), 10000);
