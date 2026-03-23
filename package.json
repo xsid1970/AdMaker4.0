@@ -1,0 +1,15 @@
+{
+  "name": "admaker",
+  "version": "1.6.0",
+  "description": "기획광고 편집기 - 통영거제교차로",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.7",
+    "multer": "^1.4.5-lts.1"
+  }
+}
