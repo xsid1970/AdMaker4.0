@@ -1,6 +1,6 @@
 {
   "name": "admaker",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "기획광고 편집기 - 통영거제교차로",
   "main": "server.js",
   "scripts": {

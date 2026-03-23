@@ -151,12 +151,25 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
     background: #ecf0f1; position: relative;
     overflow: auto; /* v2.1: 스크롤바 추가 */
   }
+
+  /* 📁 상호별 그룹화(폴더) 스타일 */
+  .history-group { margin-bottom: 12px; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+  .group-header { padding: 12px 15px; background: #f8f9fa; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; transition: background 0.2s; }
+  .group-header:hover { background: #f1f3f5; }
+  .group-header strong { font-size: 14px; color: #2c3e50; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+  .group-header .group-info { display: flex; align-items: center; gap: 8px; }
+  .group-count { background: #4f46e5; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 900; }
+  .group-arrow { color: #adb5bd; transition: transform 0.3s; font-size: 10px; }
+  .group-content { display: none; padding: 12px; grid-template-columns: 1fr 1fr; gap: 10px; background: #fff; }
+  .history-group.active .group-content { display: grid; }
+  .history-group.active .group-arrow { transform: rotate(90deg); }
+  .history-group.active .group-header { background: #eef2ff; border-bottom: 2px solid #4f46e5; }
 </style>
 </head>
 <body>
 <div class="app-header">
     <div class="creator-info">만든이: 통영.거제교차로</div>
-    <div class="main-title"><img src="/uploads/logo.png" style="height:32px; object-fit:contain;"> 기획광고 편집기 <span class="version-badge">V1.6</span></div>
+    <div class="main-title"><img src="/uploads/logo.png" style="height:32px; object-fit:contain;"> 기획광고 편집기 <span class="version-badge">V1.7</span></div>
     <div style="display:flex; gap:8px; align-items:center;">
         <button id="btnAdminSwitch" class="btn-tool btn-neutral" style="display:none;" onclick="saveDraftAndSwitch('/admin.html')">⚙️ 관리자 화면</button>
         <button class="btn-tool btn-neutral" onclick="openMemberInfo()">👤 내정보</button>
@@ -199,7 +212,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
         <h3 style="margin-top:0;">📂 작업 내역</h3>
         <input type="date" id="searchDate" style="width:100%;margin-bottom:5px;padding:8px;border:1px solid #ccc;border-radius:4px;" onchange="searchHistory(1)">
         <input type="text" id="searchInput" placeholder="상호 검색..." style="width:100%;margin-bottom:15px;padding:8px;border:1px solid #ccc;border-radius:4px;" onkeyup="if(event.key==='Enter')searchHistory(1)">
-        <div id="historyList"></div>
+        <div id="historyList" style="display: flex; flex-direction: column; gap: 0;"></div>
     </div>
     <button class="toggle-panel-btn left" id="btnToggleLeft" onclick="toggleHistoryPanel()">◀</button>
 
@@ -725,24 +738,125 @@ function duplicateWork(){if(!currentAdId)return;currentAdId=null;document.getEle
 async function deleteWork(){if(!currentAdId)return;if(confirm('정말 삭제?')){if(confirm('복구 불가! 계속?')){const rs=await fetch(`/api/ads/${currentAdId}`,{method:'DELETE'});if((await rs.json()).success){alert('삭제됨');newWork();}}}}
 function triggerQuickClone(e,id){e.stopPropagation();const t=allHistoryData.find(r=>r.id===id);if(t){if(hasUnsavedChanges&&!confirm('저장안됨 무시?'))return;loadHist(t);setTimeout(()=>duplicateWork(),300);}}
 
-async function searchHistory(p=1){if(p===1)historyPage=1;const k=document.getElementById('searchInput').value,d=document.getElementById('searchDate').value,rs=await fetch(`/api/ads?search=${k}&date=${d}`),rows=await rs.json();allHistoryData=rows;const c=document.getElementById('historyList');if(p===1)c.innerHTML='';const l=20,os=(p-1)*l,cr=rows.slice(os,os+l);cr.forEach(r=>{const cd=document.createElement('div');cd.className='history-card';cd.onclick=()=>loadHist(r);cd.innerHTML=`<button class="btn-quick-clone" onclick="triggerQuickClone(event,${r.id})">👯복제</button><img src="${r.thumbnail_base64||''}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\'/%3E'"><div class="history-info"><strong>${sanitize(r.company)}</strong><span>${r.created_at.split(' ')[0]}</span></div>`;c.appendChild(cd);});if(document.getElementById('loadMoreBtn'))document.getElementById('loadMoreBtn').remove();if(rows.length>os+l){const b=document.createElement('button');b.id='loadMoreBtn';b.className='load-more-btn';b.innerText='▼ 20개 더 보기';b.onclick=()=>searchHistory(historyPage+1);c.appendChild(b);}}
+async function searchHistory(p=1){
+    if(p===1) historyPage=1;
+    const k=document.getElementById('searchInput').value, d=document.getElementById('searchDate').value;
+    const rs=await fetch(`/api/ads?search=${k}&date=${d}`), rows=await rs.json();
+    allHistoryData=rows;
+    const c=document.getElementById('historyList');
+    if(p===1) c.innerHTML='';
+    
+    // 📁 상호명 기준 그룹화
+    const groups = new Map();
+    rows.forEach(r => {
+        const comp = r.company || '미지정';
+        if (!groups.has(comp)) groups.set(comp, []);
+        groups.get(comp).push(r);
+    });
+
+    const entries = Array.from(groups.entries());
+    const l=15, os=(p-1)*l, cr=entries.slice(os,os+l); // 그룹 단위 페이징
+
+    cr.forEach(([company, items]) => {
+        const gDiv = document.createElement('div');
+        gDiv.className = 'history-group';
+        if (items.length === 1) gDiv.classList.add('active'); // 작업물이 1개뿐이면 자동 펼침
+
+        gDiv.innerHTML = `
+            <div class="group-header" onclick="this.parentElement.classList.toggle('active')">
+                <strong>${sanitize(company)}</strong>
+                <div class="group-info">
+                    <span class="group-count">${items.length}</span>
+                    <span class="group-arrow">▶</span>
+                </div>
+            </div>
+            <div class="group-content"></div>
+        `;
+
+        const content = gDiv.querySelector('.group-content');
+        items.forEach(r => {
+            const cd = document.createElement('div');
+            cd.className = 'history-card';
+            cd.onclick = (e) => { e.stopPropagation(); loadHist(r); };
+            cd.innerHTML = `
+                <button class="btn-quick-clone" onclick="triggerQuickClone(event,${r.id})">👯복제</button>
+                <img src="${r.thumbnail_base64||''}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\'/%3E'">
+                <div class="history-info">
+                    <strong>${sanitize(r.company)}</strong>
+                    <span>${r.created_at.split(' ')[0]}</span>
+                </div>
+            `;
+            content.appendChild(cd);
+        });
+        c.appendChild(gDiv);
+    });
+
+    if(document.getElementById('loadMoreBtn')) document.getElementById('loadMoreBtn').remove();
+    if(entries.length > os + l){
+        const b=document.createElement('button');
+        b.id='loadMoreBtn'; b.className='load-more-btn';
+        b.style.margin = '10px 0';
+        b.innerText='▼ 다음 업체 더 보기';
+        b.onclick=()=>searchHistory(historyPage+1);
+        c.appendChild(b);
+    }
+}
 function loadHist(r){
     try{
         if(hasUnsavedChanges&&!confirm('무시하고 불러오기?'))return;
-        currentAdId=r.id;document.getElementById('btnDeleteAd').style.display='inline-block';document.getElementById('btnDuplicateAd').style.display='inline-block';
-        document.getElementById('info_company').value=r.company;document.getElementById('info_name').value=r.name;document.getElementById('info_contact').value=r.contact;document.getElementById('info_note').value=r.note;
+        
+        console.log('📦 작업 내역 불러오기 시작:', r);
+        
+        currentAdId=r.id;
+        document.getElementById('btnDeleteAd').style.display='inline-block';
+        document.getElementById('btnDuplicateAd').style.display='inline-block';
+        document.getElementById('info_company').value=r.company || '';
+        document.getElementById('info_name').value=r.name || '';
+        document.getElementById('info_contact').value=r.contact || '';
+        document.getElementById('info_note').value=r.note || '';
+
+        // 1. 템플릿 매칭 시도
         const tpl=templates.find(t=>t.id==r.templateType);
+
+        // 2. 캔버스 및 요소 로드 (우선순위: 내역에 저장된 값 -> 템플릿 값 -> 기본값 720)
+        canvas.width = r.canvas_width || (tpl ? tpl.canvas_width : 720);
+        canvas.height = r.canvas_height || (tpl ? tpl.canvas_height : 420);
+        
+        elements = safeParse(r.zoneData);
+        elements.forEach(e=>{
+            if(e.type==='image'&&e.url){
+                e.imgObj=new Image();
+                e.imgObj.crossOrigin="Anonymous";
+                e.imgObj.onload=drawCanvas;
+                e.imgObj.src=e.url;
+            }
+        });
+
         if(tpl){
-            currentTemplate=tpl;canvas.width=r.canvas_width||tpl.canvas_width||720;canvas.height=r.canvas_height||tpl.canvas_height||420;
-            if(tpl.bg_image_url){bgImageObj.onload=()=>{drawCanvas();setTimeout(autoFitCanvas,100);};bgImageObj.src=tpl.bg_image_url;}else{bgImageObj.src='';drawCanvas();setTimeout(autoFitCanvas,100);}
-            setTimeout(()=>{
-                elements=safeParse(r.zoneData);
-                elements.forEach(e=>{if(e.type==='image'&&e.url){e.imgObj=new Image();e.imgObj.crossOrigin="Anonymous";e.imgObj.onload=drawCanvas;e.imgObj.src=e.url;}});
-                renderZones(safeParse(tpl.zone_data)); 
-                historyStack=[];historyIndex=-1;saveHistory();markSaved();drawCanvas();
-            },200);
+            console.log('🎨 매칭된 템플릿:', tpl.title);
+            currentTemplate=tpl;
+            if(tpl.bg_image_url){
+                bgImageObj.onload=()=>{drawCanvas();setTimeout(autoFitCanvas,100);};
+                bgImageObj.src=tpl.bg_image_url;
+            }else{
+                bgImageObj.src='';
+                drawCanvas();setTimeout(autoFitCanvas,100);
+            }
+            renderZones(safeParse(tpl.zone_data)); 
+        } else {
+            console.warn('⚠️ 템플릿 정보 없음 (상태: 직접 편집 모드)', r.templateType);
+            currentTemplate = null;
+            bgImageObj.src='';
+            document.getElementById('dynamicZones').innerHTML = '<p style="font-size:12px;color:#e74c3c;text-align:center;">템플릿 정보가 없습니다.<br>(고급 편집에서 수정 가능)</p>';
+            drawCanvas(); setTimeout(autoFitCanvas,100);
         }
-    } catch(err) { console.error(err); }
+
+        historyStack=[];historyIndex=-1;saveHistory();markSaved();
+        
+    } catch(err) { 
+        console.error('❌ 불러오기 오류:', err); 
+        alert('내역을 불러오는 중 오류가 발생했습니다.');
+    }
 }
 async function downloadFile(type){
     const cy=document.getElementById('info_company').value.trim(),ct=document.getElementById('info_contact').value.trim(),dt=new Date(),ds=String(dt.getFullYear()).slice(2)+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');
