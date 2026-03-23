@@ -960,7 +960,7 @@
         function markUnsaved() { hasUnsavedChanges = true; triggerGlobalDraft(); }
         function markSaved() { hasUnsavedChanges = false; }
 
-        // 🚀 v2.1: 전역 드래프트 저장 (화면 전환용)
+        // 🚀 v2.1: 전역 드래프트 저장 (화면 전환용) - 관리자 화면용 (상세 정보 제외)
         function triggerGlobalDraft() {
             clearTimeout(autoSaveTimer);
             autoSaveTimer = setTimeout(() => {
@@ -968,10 +968,10 @@
                     elements: elements.map(e => ({ ...e, imgObj: undefined })),
                     canvasSize: { w: canvas.width, h: canvas.height },
                     customer: {
-                        company: document.getElementById('info_company').value,
-                        name: document.getElementById('info_name').value,
-                        contact: document.getElementById('info_contact').value,
-                        note: document.getElementById('info_note').value
+                        company: document.getElementById('info_company')?.value || '',
+                        name: document.getElementById('info_name')?.value || '',
+                        contact: document.getElementById('info_contact')?.value || '',
+                        note: document.getElementById('info_note')?.value || ''
                     },
                     bgUrl: bgImageObj.src
                 };
@@ -984,10 +984,10 @@
                 elements: elements.map(e => ({ ...e, imgObj: undefined })),
                 canvasSize: { w: canvas.width, h: canvas.height },
                 customer: {
-                    company: document.getElementById('info_company').value,
-                    name: document.getElementById('info_name').value,
-                    contact: document.getElementById('info_contact').value,
-                    note: document.getElementById('info_note').value
+                    company: document.getElementById('info_company')?.value || '',
+                    name: document.getElementById('info_name')?.value || '',
+                    contact: document.getElementById('info_contact')?.value || '',
+                    note: document.getElementById('info_note')?.value || ''
                 },
                 bgUrl: bgImageObj.src
             };
