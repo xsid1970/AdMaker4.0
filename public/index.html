@@ -181,6 +181,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
   .cat-tab { padding: 6px 14px; background: #f1f3f5; border-radius: 20px; font-size: 13px; color: #495057; cursor: pointer; white-space: nowrap; transition: all 0.2s; border: 1px solid transparent; }
   .cat-tab:hover { background: #e9ecef; }
   .cat-tab.active { background: #4f46e5; color: #fff; font-weight: 700; border-color: #4f46e5; }
+  
+  /* 🪄 고양이 모드 숨김 제어 버튼 */
+  #btnCatMasterToggle {
+    position: fixed; bottom: 5px; right: 5px; width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(0,0,0,0.05); cursor: pointer; z-index: 9999;
+    border: none; color: transparent; font-size: 10px; transition: 0.3s;
+  }
+  #btnCatMasterToggle:hover { background: rgba(0,0,0,0.1); color: #ccc; }
 </style>
 </head>
 <body>
@@ -991,9 +999,29 @@ function showCatMsg(force = false) {
 setInterval(() => showCatMsg(), 12000);
 setTimeout(() => showCatMsg(true), 2000);
 
-function initCatDrag() {
-    const mover = document.getElementById('catMover');
-    if(!mover) return;
+    function initCatStatus() {
+        const isCatEnabled = localStorage.getItem('cat_mode_enabled') === 'true';
+        updateCatVisibility(isCatEnabled);
+    }
+    function updateCatVisibility(enabled) {
+        const m = document.getElementById('catMover');
+        if(m) m.style.display = enabled ? 'block' : 'none';
+        const t = document.getElementById('btnCatMasterToggle');
+        if(t) t.style.opacity = enabled ? '1' : '0.1';
+    }
+    window.toggleCatMode = () => {
+        const current = localStorage.getItem('cat_mode_enabled') === 'true';
+        const next = !current;
+        localStorage.setItem('cat_mode_enabled', next);
+        updateCatVisibility(next);
+        // 사용자에게 알림 (선택사항, 너무 거슬리면 제거 가능)
+        if(next) showCatMsg(true);
+    };
+
+    function initCatDrag() {
+        initCatStatus();
+        const mover = document.getElementById('catMover');
+        if(!mover) return;
     let isDragging = false, hasMoved = false, startX, startY, initLeft, initTop;
     mover.onmousedown = function(e) {
         e.preventDefault(); isDragging = true; hasMoved = false; startX = e.clientX; startY = e.clientY;
@@ -1012,6 +1040,8 @@ function initCatDrag() {
 }
 setTimeout(initCatDrag, 500);
 </script>
+
+<button id="btnCatMasterToggle" onclick="toggleCatMode()" title="고양이 모드 전환">🐈</button>
 
 <div id="catMover">
     <div class="cat-container">

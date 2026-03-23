@@ -155,6 +155,10 @@
         </div>
         
         <div class="auth-links">
+            <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:#7f8c8d; font-size:13px; font-weight:bold;">
+                <input type="checkbox" id="catToggle" style="width:16px; height:16px; cursor:pointer;"> 🐈 고양이 모드 활성화
+            </label>
+            <div style="flex:1"></div>
             <a onclick="switchPanel('panel-register')">👤 직원 계정 등록하기</a>
             <a onclick="switchPanel('panel-change-pw')">🔐 비밀번호 변경</a>
         </div>
@@ -245,7 +249,22 @@
         };
     }
 
+    function initCatStatus() {
+        const isCatEnabled = localStorage.getItem('cat_mode_enabled') === 'true';
+        document.getElementById('catToggle').checked = isCatEnabled;
+        updateCatVisibility(isCatEnabled);
+    }
+    function updateCatVisibility(enabled) {
+        const movers = [document.getElementById('catMover'), document.getElementById('logoAvatar')];
+        movers.forEach(m => { if(m) m.style.display = enabled ? 'block' : 'none'; });
+    }
+    document.getElementById('catToggle').onchange = (e) => {
+        updateCatVisibility(e.target.checked);
+        localStorage.setItem('cat_mode_enabled', e.target.checked);
+    };
+
     function initCatDrag() {
+        initCatStatus();
         makeDraggable(document.getElementById('catMover'), () => showCatMsg(true));
         makeDraggable(document.getElementById('logoAvatar'), (el) => {
             el.style.transform='scale(1.4) rotate(360deg)';
