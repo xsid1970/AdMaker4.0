@@ -175,6 +175,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
   .history-group.active .group-content { display: grid; }
   .history-group.active .group-arrow { transform: rotate(90deg); }
   .history-group.active .group-header { background: #eef2ff; border-bottom: 2px solid #4f46e5; }
+
+  /* 🏷️ 템플릿 카테고리 탭 스타일 */
+  .category-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; border-bottom: 1px solid #eee; }
+  .cat-tab { padding: 6px 14px; background: #f1f3f5; border-radius: 20px; font-size: 13px; color: #495057; cursor: pointer; white-space: nowrap; transition: all 0.2s; border: 1px solid transparent; }
+  .cat-tab:hover { background: #e9ecef; }
+  .cat-tab.active { background: #4f46e5; color: #fff; font-weight: 700; border-color: #4f46e5; }
 </style>
 </head>
 <body>
@@ -201,7 +207,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
     <div class="char-grid" id="tab_symbols"></div><div class="char-grid" id="tab_units"></div><div class="char-grid" id="tab_brackets"></div>
 </div></div>
 
-<div class="modal-overlay" id="templateModalOverlay"><div class="modal-content" style="width:800px;background:#fdfdfe;"><div style="display:flex;justify-content:space-between;margin-bottom:15px;"><strong style="color:var(--primary);font-size:20px;">🎨 갤러리</strong><button class="btn-tool" onclick="closeModal('templateModalOverlay')">닫기</button></div><div class="template-grid" id="modalTemplateGrid"></div></div></div>
+<div class="modal-overlay" id="templateModalOverlay"><div class="modal-content" style="width:800px;background:#fdfdfe;"><div style="display:flex;justify-content:space-between;margin-bottom:15px;"><strong style="color:var(--primary);font-size:20px;">🎨 갤러리</strong><button class="btn-tool" onclick="closeModal('templateModalOverlay')">닫기</button></div><div class="category-tabs" id="modalCategoryTabs"></div><div class="template-grid" id="modalTemplateGrid"></div></div></div>
 
 <div class="modal-overlay" id="memberInfoModal">
     <div class="modal-content" style="width:320px; border-left:5px solid #3498db;">
@@ -720,7 +726,26 @@ function renderZones(arr){
 
 function checkAutoSave(){const s=localStorage.getItem('v8_draft');if(s){if(confirm('이전 내역 복구?')){const d=JSON.parse(s);document.getElementById('info_company').value=d.company||'';document.getElementById('info_name').value=d.name||'';document.getElementById('info_contact').value=d.contact||'';document.getElementById('info_note').value=d.note||'';const t=templates.find(x=>x.id===d.tplId);if(t){currentTemplate=t;canvas.width=d.canvasW||t.canvas_width||720;canvas.height=d.canvasH||t.canvas_height||420;if(t.bg_image_url){bgImageObj.onload=()=>{drawCanvas();setTimeout(autoFitCanvas,100);};bgImageObj.src=t.bg_image_url;}else{bgImageObj.src='';drawCanvas();setTimeout(autoFitCanvas,100);}elements=safeParse(d.elements);elements.forEach(e=>{if(e.type==='image'&&e.url){e.imgObj=new Image();e.imgObj.crossOrigin="Anonymous";e.imgObj.onload=drawCanvas;e.imgObj.src=e.url;}});renderZones(safeParse(t.zone_data));historyStack=[];historyIndex=-1;saveHistory();markUnsaved();}}else localStorage.removeItem('v8_draft');}}
 
-async function initApp(){const rs=await fetch('/api/templates');templates=await rs.json();const g=document.getElementById('modalTemplateGrid');templates.forEach(t=>{const c=document.createElement('div');c.className='template-card';c.onclick=()=>{if(hasUnsavedChanges&&!confirm('이동?'))return;selectTemplate(t);closeModal('templateModalOverlay');};c.innerHTML=`<img src="${t.thumbnail_base64}"><span>${t.title}</span>`;g.appendChild(c);});searchHistory(1);setTimeout(checkAutoSave,500);if(!localStorage.getItem('v8_draft')&&templates.length>0)openModal('templateModalOverlay');}
+async function initApp(){const rs=await fetch('/api/templates');templates=await rs.json();renderTemplateGallery();searchHistory(1);setTimeout(checkAutoSave,500);if(!localStorage.getItem('v8_draft')&&templates.length>0)openModal('templateModalOverlay');}
+function renderTemplateGallery(selectedCat = '전체') {
+    const tabs = document.getElementById('modalCategoryTabs');
+    const grid = document.getElementById('modalTemplateGrid');
+    grid.innerHTML = '';
+    
+    // 1. 카테고리 추출 및 탭 생성
+    const categories = ['전체', ...new Set(templates.map(t => t.category || '일반'))].filter(Boolean);
+    tabs.innerHTML = categories.map(cat => `<div class="cat-tab ${cat === selectedCat ? 'active' : ''}" onclick="renderTemplateGallery('${cat}')">${cat}</div>`).join('');
+
+    // 2. 필터링 및 렌더링
+    const filtered = selectedCat === '전체' ? templates : templates.filter(t => (t.category || '일반') === selectedCat);
+    filtered.forEach(t => {
+        const c = document.createElement('div');
+        c.className = 'template-card';
+        c.onclick = () => { if (hasUnsavedChanges && !confirm('이동?')) return; selectTemplate(t); closeModal('templateModalOverlay'); };
+        c.innerHTML = `<img src="${t.thumbnail_base64}"><span>${t.title}</span>`;
+        grid.appendChild(c);
+    });
+}
 function newWork(){if(hasUnsavedChanges&&!confirm('새 작업 시작?'))return;location.reload();}
 
 // 🚀 4. 무적 템플릿 로더 (절대 안 깨짐)

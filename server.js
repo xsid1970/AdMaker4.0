@@ -102,20 +102,36 @@ templateDb.serialize(() => {
     });
 });
 
+templateDb.serialize(() => {
+    templateDb.run(`CREATE TABLE IF NOT EXISTS templates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        bg_image_url TEXT,
+        thumbnail_base64 TEXT,
+        zone_data TEXT,
+        shape_data TEXT,
+        canvas_width INTEGER,
+        canvas_height INTEGER,
+        is_active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+    templateDb.run(`ALTER TABLE templates ADD COLUMN category TEXT`, (err) => {});
+});
+
 app.post('/api/upload-image', upload.single('image'), (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, message: '파일 없음' });
     res.json({ success: true, imageUrl: `/uploads/${req.file.filename}` });
 });
 
 app.post('/api/admin/templates', (req, res) => {
-    const { id, title, bg_image_url, thumbnail_base64, zone_data, shape_data, canvas_width, canvas_height, is_active } = req.body;
+    const { id, title, category, bg_image_url, thumbnail_base64, zone_data, shape_data, canvas_width, canvas_height, is_active } = req.body;
     if (id) {
-        templateDb.run(`UPDATE templates SET title=?, bg_image_url=?, thumbnail_base64=?, zone_data=?, shape_data=?, canvas_width=?, canvas_height=?, is_active=? WHERE id=?`, 
-            [title, bg_image_url, thumbnail_base64, JSON.stringify(zone_data), JSON.stringify(shape_data), canvas_width, canvas_height, is_active, id], 
+        templateDb.run(`UPDATE templates SET title=?, category=?, bg_image_url=?, thumbnail_base64=?, zone_data=?, shape_data=?, canvas_width=?, canvas_height=?, is_active=? WHERE id=?`, 
+            [title, category, bg_image_url, thumbnail_base64, JSON.stringify(zone_data), JSON.stringify(shape_data), canvas_width, canvas_height, is_active, id], 
             err => res.json({ success: !err, id: id }));
     } else {
-        templateDb.run(`INSERT INTO templates (title, bg_image_url, thumbnail_base64, zone_data, shape_data, canvas_width, canvas_height, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
-            [title, bg_image_url, thumbnail_base64, JSON.stringify(zone_data), JSON.stringify(shape_data), canvas_width, canvas_height, is_active], 
+        templateDb.run(`INSERT INTO templates (title, category, bg_image_url, thumbnail_base64, zone_data, shape_data, canvas_width, canvas_height, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+            [title, category, bg_image_url, thumbnail_base64, JSON.stringify(zone_data), JSON.stringify(shape_data), canvas_width, canvas_height, is_active], 
             function(err) { res.json({ success: !err, id: this.lastID }); });
     }
 });
