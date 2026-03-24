@@ -182,13 +182,21 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/register', (req, res) => {
-    const { id, password } = req.body;
-    if(!id || !password) return res.json({ success: false, message: '아이디와 비밀번호를 입력해주세요.' });
-    workDb.get(`SELECT id FROM users WHERE id = ?`, [id], (err, row) => {
-        if (row) return res.json({ success: false, message: '이미 사용 중인 아이디입니다.' });
-        workDb.run(`INSERT INTO users (id, password, role) VALUES (?, ?, ?)`, [id, password, 'employee'], (err) => {
-            if (err) res.status(500).json({ success: false, error: err.message });
-            else res.json({ success: true, message: '가입 완료! 이제 로그인할 수 있습니다.' });
+    const { id, password, adminId, adminPw } = req.body;
+    if(!id || !password || !adminId || !adminPw) return res.json({ success: false, message: '모든 정보를 입력해주세요. (관리자 인증 필요)' });
+    
+    // 1. 관리자 권한 확인
+    workDb.get(`SELECT id FROM users WHERE id = ? AND password = ? AND role = 'admin'`, [adminId, adminPw], (err, adminRow) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (!adminRow) return res.json({ success: false, message: '관리자 인증에 실패했습니다. 올바른 관리자 계정을 입력하세요.' });
+
+        // 2. 신규 아이디 중복 확인 및 등록
+        workDb.get(`SELECT id FROM users WHERE id = ?`, [id], (err, row) => {
+            if (row) return res.json({ success: false, message: '이미 사용 중인 아이디입니다.' });
+            workDb.run(`INSERT INTO users (id, password, role) VALUES (?, ?, ?)`, [id, password, 'employee'], (err) => {
+                if (err) res.status(500).json({ success: false, error: err.message });
+                else res.json({ success: true, message: '직원 계정 등록 완료!' });
+            });
         });
     });
 });
