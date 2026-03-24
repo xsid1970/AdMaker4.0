@@ -188,6 +188,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
     cursor: pointer; transition: 0.3s; padding: 0; font-size: 16px; border: 1px solid #ddd;
   }
   #btnCatMasterToggle:hover { transform: scale(1.1); background: #fdf2f8; }
+  
+  /* 📘 메뉴얼 전용 스타일 */
+  .manual-content-area { max-height: 70vh; overflow-y: auto; padding-right: 10px; }
+  .manual-item { margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 12px; border-left: 4px solid var(--primary); }
+  .manual-item h4 { margin: 0 0 10px 0; color: var(--primary); font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .manual-item p { margin: 5px 0; font-size: 13.5px; color: #475569; line-height: 1.6; }
+  .manual-item ul { margin: 8px 0; padding-left: 20px; }
+  .manual-item li { font-size: 13px; color: #64748b; margin-bottom: 4px; }
+  .highlight-tag { background: #fee2e2; color: #ef4444; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+  .key-tip { background: #e2e8f0; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 12px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -196,6 +206,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
     <div class="main-title"><img src="/uploads/logo.png" style="height:32px; object-fit:contain;"> 기획광고 편집기 <span class="version-badge">V1.7</span></div>
     <div style="display:flex; gap:8px; align-items:center;">
         <button id="btnCatMasterToggle" onclick="toggleCatMode()" title="고양이 모드 전환" style="background:#fff;">🐈</button>
+        <button class="btn-tool btn-neutral" style="background:#4f46e5; color:white; border-color:#4f46e5;" onclick="openModal('manualModalOverlay')">❓ 도움말</button>
         <button id="btnAdminSwitch" class="btn-tool btn-neutral" style="display:none;" onclick="saveDraftAndSwitch('/admin.html')">⚙️ 관리자 화면</button>
         <button class="btn-tool btn-neutral" onclick="openMemberInfo()">👤 내정보</button>
         <button id="modeToggle" class="toggle-btn" onclick="toggleEditMode()">🔒 고급 편집 잠금</button>
@@ -204,7 +215,61 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
 </div>
 <div id="loadingModal">⏳ 고화질 파일 생성 중...</div>
 
-<div class="modal-overlay" id="charModalOverlay"><div class="modal-content"><div style="display:flex;justify-content:space-between;"><strong style="color:var(--primary);font-size:18px;">✨ 스티커 & 기호</strong><button class="btn-tool" onclick="closeModal('charModalOverlay')">닫기</button></div><p style="font-size:12px;color:#777;">※ <strong>더블클릭</strong> 시 커서 위치 삽입</p>
+<div class="modal-overlay" id="manualModalOverlay">
+    <div class="modal-content" style="width:550px; border-top:8px solid var(--primary);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <strong style="color:var(--primary);font-size:22px;">📘 초보자 가이드 (메뉴얼)</strong>
+            <button class="btn-tool" onclick="closeModal('manualModalOverlay')">닫기</button>
+        </div>
+        <div class="manual-content-area">
+            <div class="manual-item">
+                <h4>🏢 자동 완성 & 정보 입력</h4>
+                <p>상호명을 입력하면 기존에 작업했던 데이터를 자동으로 찾아줍니다.</p>
+                <ul>
+                    <li>이름이나 연락처가 자동으로 채워지면 <span class="highlight-tag">노란색 반짝임</span> 효과가 나타납니다.</li>
+                    <li>목록에서 원하는 업체를 클릭하면 즉시 모든 정보가 입력됩니다.</li>
+                </ul>
+            </div>
+            <div class="manual-item">
+                <h4>🖼️ 이미지 & 사진 도구</h4>
+                <p>사진을 올리고 원하는 부분만 깔끔하게 잘라낼 수 있습니다.</p>
+                <ul>
+                    <li><strong>사진 버튼</strong>: 내 PC의 이미지를 불러옵니다.</li>
+                    <li><strong>자르기(✂️)</strong>: 이미지 선택 후 '자르기' 버튼을 눌러 영역을 조절하세요.</li>
+                    <li><strong>QR코드</strong>: 홍보용 URL을 입력하면 즉시 생성됩니다.</li>
+                </ul>
+            </div>
+            <div class="manual-item">
+                <h4>⭐ 스티커 & 기호 활용</h4>
+                <p>광고의 퀄리티를 높여주는 요소들을 빠르게 추가하세요.</p>
+                <ul>
+                    <li>스티커 목록에서 아이템을 <span class="highlight-tag">더블 클릭</span>하면 캔버스 중앙에 삽입됩니다.</li>
+                    <li><strong>급매/추천 뱃지</strong>는 강조하고 싶은 텍스트 위에 올려두면 효과적입니다.</li>
+                </ul>
+            </div>
+            <div class="manual-item">
+                <h4>🔓 고급 편집 모드 (전문가용)</h4>
+                <p>세밀한 조정을 원할 때 '고급 편집 잠금'을 해제하세요.</p>
+                <ul>
+                    <li><strong>레이어 조절</strong>: 요소의 앞/뒤 순서를 바꿀 수 있습니다.</li>
+                    <li><strong>세부 설정</strong>: 글자 간격(자간), 줄 간격(행간), 그림자, 외곽선을 조절하세요.</li>
+                    <li><strong>단축키</strong>: 복제 <span class="key-tip">Alt + D</span> / 취소 <span class="key-tip">Ctrl + Z</span> / 복사 <span class="key-tip">Ctrl + C</span></li>
+                </ul>
+            </div>
+            <div class="manual-item">
+                <h4>💾 저장 및 출력</h4>
+                <p>작업이 끝난 후에는 반드시 '내역 저장'을 해주세요.</p>
+                <ul>
+                    <li>저장된 작업은 좌측 <strong>작업 내역</strong>에서 언제든 다시 불러올 수 있습니다.</li>
+                    <li>이미지(JPG) 또는 PDF 파일로 즉시 다운로드 가능합니다.</li>
+                </ul>
+            </div>
+        </div>
+        <button class="btn-full btn-primary" style="margin-top:10px;" onclick="closeModal('manualModalOverlay')">확인했습니다!</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="charModalOverlay"><div class="modal-content"><div style="display:flex;justify-content:space-between;"><strong style="color:var(--primary);font-size:18px;">✨ 스티커 & 기호</strong><button class="btn-tool" onclick="closeModal('charModalOverlay')">닫기</button></div><p style="font-size:12px;color:#777;">※ <strong>더블클릭</strong> 시 요소가 즉시 추가됩니다.</p>
     <div class="tab-header"><button class="tab-btn active" onclick="switchCharTab('stickers')">🚀 스티커</button><button class="tab-btn" onclick="switchCharTab('symbols')">기호</button><button class="tab-btn" onclick="switchCharTab('units')">단위</button><button class="tab-btn" onclick="switchCharTab('brackets')">괄호</button></div>
     <div class="char-grid active" id="tab_stickers" style="grid-template-columns:1fr 1fr;">
         <button class="btn-full btn-danger" style="margin:0;" onclick="addSticker('urgent')">🚨 급매 뱃지</button>
@@ -255,7 +320,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
         <div id="basicModeArea">
             <button class="btn-full btn-primary" style="font-size:16px;padding:15px;margin-bottom:20px;" onclick="openModal('templateModalOverlay')">🎨 템플릿 열기</button>
             <h4 style="margin:15px 0 10px 0;">✍️ 내용 입력</h4>
-            <div id="dynamicZones"><p style="font-size:12px;color:#999;text-align:center;">템플릿을 선택하세요.</p></div>
+            <div id="dynamicZones"><p style="font-size:13px;color:#999;text-align:center;padding:20px;background:#f8f9fa;border-radius:8px;border:1px dashed #cbd5e1;">🎨 상단의 <strong>'템플릿 열기'</strong> 버튼을 클릭하여<br>작업을 시작해 주세요.</p></div>
         </div>
         <div id="advControls">
             <h4>🛠 요소 도구</h4>
@@ -277,7 +342,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
                 <button class="btn-full btn-neutral" style="margin:0;" onclick="openCropModal('canvas')">✂️ 전체 크롭</button>
                 <button class="btn-full btn-neutral" style="margin:0;" onclick="addQRCode()">📱 QR코드</button>
             </div>
-            <div id="advNoSelect" style="font-size:12px;color:#999;text-align:center;padding:20px;background:#f9f9f9;border:1px dashed #ccc;">캔버스 요소 클릭</div>
+            <div id="advNoSelect" style="font-size:13px;color:#64748b;text-align:center;padding:30px 20px;background:#f8fafc;border:2px dashed #e2e8f0;border-radius:12px;line-height:1.6;">🖱️ 캔버스 위에서 <strong>수정할 요소</strong>를 클릭하면<br>상세 도구가 나타납니다.</div>
             <div id="advSettings" style="display:none;">
                 <div class="grid-3" style="margin-bottom:10px;">
                     <button class="btn-tool" onclick="changeLayer(1)">▲ 앞으로</button>
