@@ -68,8 +68,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f4f7fa;margin:0;display:f
 .history-info{padding:6px;font-size:11px;text-align:center;}
 .history-info strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333;}
 .history-info span{color:#999;font-size:10px;}
-.btn-quick-clone{position:absolute;top:5px;right:5px;background:rgba(46,204,113,0.9);color:white;border:none;border-radius:4px;font-size:10px;padding:4px 6px;cursor:pointer;display:none;font-weight:bold;}
-.history-card:hover .btn-quick-clone{display:block;} .btn-quick-clone:hover{background:#27ae60;}
+.btn-quick-clone{position:absolute;top:5px;right:5px;background:rgba(46,204,113,0.9);color:white;border:none;border-radius:4px;font-size:10px;padding:4px 6px;cursor:pointer;display:none;font-weight:bold;z-index:10;}
+.btn-quick-delete{position:absolute;top:5px;left:5px;background:rgba(231,76,60,0.9);color:white;border:none;border-radius:4px;font-size:10px;padding:4px 6px;cursor:pointer;display:none;font-weight:bold;z-index:10;}
+.history-card:hover .btn-quick-clone, .history-card:hover .btn-quick-delete{display:block;}
+.btn-quick-clone:hover{background:#27ae60;} .btn-quick-delete:hover{background:#c0392b;}
 .load-more-btn{grid-column:1/-1;padding:8px;background:#eee;border:none;border-radius:4px;cursor:pointer;font-size:12px;color:#555;}
 .zone-input{background:#fff;border:1px solid #e1e5eb;padding:12px;border-radius:8px;border-left:4px solid #3498db;margin-bottom:10px;}
 .zone-input label{font-size:12px;font-weight:bold;display:block;margin-bottom:5px;color:#2c3e50;}
@@ -897,8 +899,19 @@ function deleteAdv(){if(!selectedElement)return;if(window.selectedElements&&wind
 
 async function saveToDB(){const c=document.getElementById('info_company').value.trim();if(!c)return alert("상호명 필수!");localStorage.removeItem('v8_draft');markSaved();const p=selectedElement;selectedElement=null;isPreviewMode=true;drawCanvas();const tc=document.createElement('canvas');tc.width=200;tc.height=(canvas.height/canvas.width)*200;tc.getContext('2d').drawImage(canvas,0,0,tc.width,tc.height);isPreviewMode=false;selectedElement=p;drawCanvas();const d={id:currentAdId,company:c,name:document.getElementById('info_name').value,contact:document.getElementById('info_contact').value,note:document.getElementById('info_note').value,templateType:currentTemplate.id,canvas_width:canvas.width,canvas_height:canvas.height,zoneData:elements.map(e=>{let cp={...e};delete cp.imgObj;return cp;}),thumbnail_base64:tc.toDataURL('image/jpeg',0.5)};const rs=await fetch('/api/ads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});const r=await rs.json();if(r.success){alert('저장 완료!');currentAdId=r.id;document.getElementById('btnDeleteAd').style.display='inline-block';document.getElementById('btnDuplicateAd').style.display='inline-block';searchHistory(1);}}
 function duplicateWork(){if(!currentAdId)return;currentAdId=null;document.getElementById('info_company').value+=' (복사본)';document.getElementById('btnDeleteAd').style.display='none';document.getElementById('btnDuplicateAd').style.display='none';markUnsaved();alert("복제됨! 저장 누르세요.");}
-async function deleteWork(){if(!currentAdId)return;if(confirm('정말 삭제?')){if(confirm('복구 불가! 계속?')){const rs=await fetch(`/api/ads/${currentAdId}`,{method:'DELETE'});if((await rs.json()).success){alert('삭제됨');newWork();}}}}
-function triggerQuickClone(e,id){e.stopPropagation();const t=allHistoryData.find(r=>r.id===id);if(t){if(hasUnsavedChanges&&!confirm('저장안됨 무시?'))return;loadHist(t);setTimeout(()=>duplicateWork(),300);}}
+async function deleteWork(){if(!currentAdId)return;if(confirm('정말 삭제?')){if(confirm('복구 불가! 계속?')){const rs=await fetch(`/api/ads/${currentAdId}`,{method:'DELETE'});if((await rs.json()).success){alert('삭제됨');newWork();searchHistory();}}}}
+async function deleteHistoryItem(e, id) {
+    e.stopPropagation();
+    if(confirm('이 내역을 정말 삭제하시겠습니까?\n복구할 수 없습니다.')) {
+        const rs = await fetch(`/api/ads/${id}`, { method: 'DELETE' });
+        if((await rs.json()).success) {
+            alert('삭제되었습니다.');
+            searchHistory();
+            if(currentAdId === id) newWork();
+        }
+    }
+}
+async function triggerQuickClone(e,id){e.stopPropagation();const t=allHistoryData.find(r=>r.id===id);if(t){if(hasUnsavedChanges&&!confirm('저장안됨 무시?'))return;loadHist(t);setTimeout(()=>duplicateWork(),300);}}
 
 async function searchHistory(p=1){
     if(p===1) historyPage=1;
@@ -942,6 +955,7 @@ async function searchHistory(p=1){
             cd.onclick = (e) => { e.stopPropagation(); loadHist(r); };
             cd.innerHTML = `
                 <button class="btn-quick-clone" onclick="triggerQuickClone(event,${r.id})">👯복제</button>
+                <button class="btn-quick-delete" onclick="deleteHistoryItem(event,${r.id})">🗑️삭제</button>
                 <img src="${r.thumbnail_base64||''}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\'/%3E'">
                 <div class="history-info">
                     <strong>${sanitize(r.company)}</strong>
