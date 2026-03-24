@@ -13,6 +13,12 @@ if (-not $CommitMsg) {
 
 Write-Host "--- 🟢 배포 프로세스 시작 ($CommitMsg) ---" -ForegroundColor Cyan
 
+# 0. 키 파일 권한 수정 (SSH 보안 상속 해제 및 현재 사용자에게만 권한 부여)
+Write-Host "`n0. 키 파일 권한 최적화 중..." -ForegroundColor Yellow
+icacls "$KEY_PATH" /reset
+icacls "$KEY_PATH" /inheritance:r
+icacls "$KEY_PATH" /grant:r "$($env:username):R"
+
 # 1. 로컬 코드 푸시 (Git)
 Write-Host "`n1. Git 코드를 Github으로 푸시 중..." -ForegroundColor Yellow
 git add .
