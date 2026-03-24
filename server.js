@@ -64,6 +64,7 @@ workDb.serialize(() => {
     workDb.run(`ALTER TABLE ads_history ADD COLUMN thumbnail_base64 TEXT`, (err) => {}); 
     workDb.run(`ALTER TABLE ads_history ADD COLUMN canvas_width INTEGER`, (err) => {});
     workDb.run(`ALTER TABLE ads_history ADD COLUMN canvas_height INTEGER`, (err) => {});
+    workDb.run(`ALTER TABLE ads_history ADD COLUMN tags TEXT`, (err) => {});
 });
 
 templateDb.serialize(() => {
@@ -152,21 +153,22 @@ app.get('/api/templates', (req, res) => {
 });
 
 app.post('/api/ads', (req, res) => {
-    const { id, company, name, contact, note, templateType, zoneData, thumbnail_base64, canvas_width, canvas_height } = req.body;
+    const { id, company, name, contact, note, templateType, zoneData, thumbnail_base64, canvas_width, canvas_height, tags } = req.body;
     if (!company) return res.status(400).json({ success: false, error: '상호명 필수' });
     if (id) {
-        workDb.run(`UPDATE ads_history SET company=?, name=?, contact=?, note=?, templateType=?, zoneData=?, thumbnail_base64=?, canvas_width=?, canvas_height=?, created_at=CURRENT_TIMESTAMP WHERE id=?`,
-            [company, name, contact, note, templateType, JSON.stringify(zoneData), thumbnail_base64, canvas_width, canvas_height, id], function(err) { res.json({ success: !err, id: id }); });
+        workDb.run(`UPDATE ads_history SET company=?, name=?, contact=?, note=?, templateType=?, zoneData=?, thumbnail_base64=?, canvas_width=?, canvas_height=?, tags=?, created_at=CURRENT_TIMESTAMP WHERE id=?`,
+            [company, name, contact, note, templateType, JSON.stringify(zoneData), thumbnail_base64, canvas_width, canvas_height, tags, id], function(err) { res.json({ success: !err, id: id }); });
     } else {
-        workDb.run(`INSERT INTO ads_history (company, name, contact, note, templateType, zoneData, thumbnail_base64, canvas_width, canvas_height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [company, name, contact, note, templateType, JSON.stringify(zoneData), thumbnail_base64, canvas_width, canvas_height], function(err) { res.json({ success: !err, id: this.lastID }); });
+        workDb.run(`INSERT INTO ads_history (company, name, contact, note, templateType, zoneData, thumbnail_base64, canvas_width, canvas_height, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [company, name, contact, note, templateType, JSON.stringify(zoneData), thumbnail_base64, canvas_width, canvas_height, tags], function(err) { res.json({ success: !err, id: this.lastID }); });
     }
 });
 app.get('/api/ads', (req, res) => {
-    const search = req.query.search || ''; const date = req.query.date || '';
+    const search = req.query.search || ''; const date = req.query.date || ''; const tag = req.query.tag || '';
     let query = `SELECT * FROM ads_history WHERE 1=1`; const params = [];
     if (search) { query += ` AND (company LIKE ? OR note LIKE ?)`; params.push(`%${search}%`, `%${search}%`); }
     if (date) { query += ` AND date(created_at) = ?`; params.push(date); }
+    if (tag) { query += ` AND tags LIKE ?`; params.push(`%${tag}%`); }
     query += ` ORDER BY created_at DESC LIMIT 60`; // V7.0 썸네일 표시를 위해 60개 불러옴
     workDb.all(query, params, (err, rows) => res.json(rows));
 });
