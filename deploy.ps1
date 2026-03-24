@@ -1,8 +1,8 @@
 # AdMaker 4.0 One-Click Deployment Script (PowerShell)
 
 $IP = "13.125.184.180"
-$KEY_PATH = "$LOCAL_DIR\LightsailDefaultKey-ap-northeast-2.pem"
 $LOCAL_DIR = "C:\Users\xsid1\Desktop\AdMaker4.0"
+$KEY_PATH = "$LOCAL_DIR\LightsailDefaultKey-ap-northeast-2.pem"
 $REMOTE_USER = "ubuntu"
 $REMOTE_PATH = "~/AdMaker4.0"
 
